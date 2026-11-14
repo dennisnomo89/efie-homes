@@ -1,0 +1,116 @@
+// Efie Homes — Prisma schema
+// SQLite is used for zero-config local development. To switch to PostgreSQL,
+// change the provider to "postgresql" and point DATABASE_URL at your server.
+//
+// Enum-like fields (role, propertyType, status, …) are stored as strings and
+// validated by the Zod schemas in src/lib/validations.ts. List fields (images,
+// amenities) are stored as JSON-encoded strings so the schema works on SQLite.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  phone        String?
+  passwordHash String
+  /// TENANT | LANDLORD | ADMIN
+  role         String   @default("TENANT")
+  /// Verified landlords/agents get a trust badge on their listings
+  isVerified   Boolean  @default(false)
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  properties      Property[]
+  viewingRequests ViewingRequest[]
+  savedProperties SavedProperty[]
+}
+
+model Property {
+  id              String   @id @default(cuid())
+  title           String
+  description     String
+  /// CHAMBER_HALL | SINGLE_ROOM_SC | APARTMENT_1BR | APARTMENT_2BR | APARTMENT_3BR | APARTMENT_4BR | DETACHED | TOWNHOUSE | EXECUTIVE_MANSION
+  propertyType    String
+  /// One of Ghana's 16 regions, e.g. "Greater Accra"
+  region          String
+  /// Suburb / neighbourhood, e.g. "East Legon"
+  neighborhood    String
+  address         String
+  /// Monthly rent in whole Ghana Cedis
+  monthlyRent     Int
+  /// Minimum advance the landlord requires, in months (6, 12 or 24)
+  advanceMonths   Int      @default(12)
+  /// Refundable security deposit in Ghana Cedis
+  securityDeposit Int      @default(0)
+  /// Agent commission as a percentage of the advance (0 when listed directly by landlord)
+  agentFeePercent Int      @default(0)
+  bedrooms        Int      @default(1)
+  bathrooms       Int      @default(1)
+  sizeSqm         Int?
+  furnished       Boolean  @default(false)
+  /// JSON array of image URLs
+  images          String   @default("[]")
+  /// JSON array of amenity keys (see src/lib/constants.ts)
+  amenities       String   @default("[]")
+  /// AVAILABLE | RENTED
+  status          String   @default("AVAILABLE")
+  isFeatured      Boolean  @default(false)
+  views           Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  landlordId      String
+  landlord        User             @relation(fields: [landlordId], references: [id], onDelete: Cascade)
+  viewingRequests ViewingRequest[]
+  savedBy         SavedProperty[]
+
+  @@index([region])
+  @@index([neighborhood])
+  @@index([status])
+  @@index([monthlyRent])
+  @@index([landlordId])
+}
+
+model ViewingRequest {
+  id            String   @id @default(cuid())
+  preferredDate DateTime
+  /// "HH:MM" 24-hour slot
+  preferredTime String
+  phone         String
+  message       String
+  /// PENDING | CONFIRMED | DECLINED
+  status        String   @default("PENDING")
+  landlordNote  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  tenantId   String
+  tenant     User     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId])
+  @@index([tenantId])
+  @@index([status])
+}
+
+model SavedProperty {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, propertyId])
+}

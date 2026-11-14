@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-cream font-sans text-ink antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply text-balance;
+  }
+  ::selection {
+    @apply bg-gold-300 text-ink;
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-forest-500 ring-offset-2 ring-offset-cream;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all duration-150 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60;
+  }
+  .btn-sm {
+    @apply min-h-[36px] rounded-lg px-3 py-1.5 text-xs;
+  }
+  .btn-primary {
+    @apply bg-forest-800 text-white shadow-sm hover:bg-forest-900;
+  }
+  .btn-accent {
+    @apply bg-terracotta-500 text-white shadow-sm hover:bg-terracotta-600;
+  }
+  .btn-gold {
+    @apply bg-gold-400 text-ink shadow-sm hover:bg-gold-500;
+  }
+  .btn-outline {
+    @apply border border-stone-300 bg-white text-ink hover:border-forest-700 hover:text-forest-800;
+  }
+  .btn-ghost {
+    @apply text-stone-700 hover:bg-stone-100 hover:text-ink;
+  }
+  .btn-danger {
+    @apply bg-red-600 text-white hover:bg-red-700;
+  }
+
+  .input {
+    @apply block min-h-[44px] w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-stone-400 transition focus:border-forest-600 focus:outline-none focus:ring-2 focus:ring-forest-600/20 disabled:bg-stone-100;
+  }
+  .input-error {
+    @apply border-red-400 focus:border-red-500 focus:ring-red-500/20;
+  }
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-stone-700;
+  }
+  .field-error {
+    @apply mt-1.5 text-xs font-medium text-red-600;
+  }
+
+  .card {
+    @apply rounded-2xl border border-stone-200/80 bg-white shadow-soft;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold;
+  }
+
+  .chip {
+    @apply inline-flex min-h-[40px] cursor-pointer select-none items-center justify-center rounded-xl border border-stone-300 bg-white px-3.5 text-sm font-medium text-stone-700 transition hover:border-forest-600;
+  }
+  .chip-active {
+    @apply border-forest-800 bg-forest-800 text-white hover:border-forest-800;
+  }
+
+  .skeleton {
+    @apply animate-pulse rounded-lg bg-stone-200/80;
+  }
+
+  .section-eyebrow {
+    @apply text-xs font-bold uppercase tracking-[0.18em] text-terracotta-600;
+  }
+  .section-title {
+    @apply font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl;
+  }
+
+  /* Kente-inspired accent stripe */
+  .kente-stripe {
+    background-image: repeating-linear-gradient(
+      90deg,
+      #e3a92b 0 18px,
+      #174e3c 18px 30px,
+      #d9633d 30px 42px,
+      #1c1917 42px 46px
+    );
+  }
+}
+
+@layer utilities {
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
