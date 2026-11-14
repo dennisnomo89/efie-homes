@@ -1,6 +1,8 @@
 /* Efie Homes — seed script
  * Run with: npx prisma db seed
  * Every seeded account uses the password: Password123
+ * WARNING: deletes all existing data first. It refuses to run if the database
+ * contains real (non-@efiehomes.test) accounts unless SEED_FORCE=true.
  */
 import { PrismaClient, type Property } from "@prisma/client";
 import bcrypt from "bcryptjs";
@@ -483,6 +485,17 @@ function daysFromNow(days: number) {
 
 async function main() {
   console.log("🌱 Seeding Efie Homes…");
+
+  // The seed wipes every table. Refuse to run on a database that already has
+  // real (non-demo) accounts unless SEED_FORCE=true is set explicitly.
+  const realUsers = await prisma.user.count({ where: { NOT: { email: { endsWith: "@efiehomes.test" } } } });
+  if (realUsers > 0 && process.env.SEED_FORCE !== "true") {
+    console.error(
+      `✋ Found ${realUsers} non-demo account(s). Seeding would delete ALL data.\n` +
+        "   If you really want to reset this database, re-run with SEED_FORCE=true.",
+    );
+    process.exit(1);
+  }
 
   await prisma.savedProperty.deleteMany();
   await prisma.viewingRequest.deleteMany();

@@ -1,18 +1,21 @@
 // Efie Homes — Prisma schema
-// SQLite is used for zero-config local development. To switch to PostgreSQL,
-// change the provider to "postgresql" and point DATABASE_URL at your server.
+// PostgreSQL (hosted on Neon in production).
+//   DATABASE_URL           pooled connection, used by the app at runtime
+//   DATABASE_URL_UNPOOLED  direct connection, used by Prisma Migrate
+// These are the variable names Vercel's Neon integration creates automatically.
 //
 // Enum-like fields (role, propertyType, status, …) are stored as strings and
 // validated by the Zod schemas in src/lib/validations.ts. List fields (images,
-// amenities) are stored as JSON-encoded strings so the schema works on SQLite.
+// amenities) are stored as JSON-encoded strings.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
 }
 
 model User {

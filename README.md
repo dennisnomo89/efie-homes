@@ -2,7 +2,7 @@
 
 *Efie* means "home" in Twi. Efie Homes is a rental marketplace for Ghana. Landlords and verified agents list homes, and tenants search, save favourites and book viewings. Prices are shown in Ghana Cedis, and every listing states its rent advance terms.
 
-**Stack:** Next.js 15 (App Router) · TypeScript · Tailwind CSS · Lucide icons · Prisma 6 + SQLite · JWT auth (`jose`, httpOnly cookie) · `bcryptjs` · Zod
+**Stack:** Next.js 15 (App Router) · TypeScript · Tailwind CSS · Lucide icons · Prisma 6 + PostgreSQL (Neon) · JWT auth (`jose`, httpOnly cookie) · `bcryptjs` · Zod
 
 ---
 
@@ -21,12 +21,13 @@ npm rebuild
 
 # 2. Configure environment
 cp .env.example .env
-# then set JWT_SECRET to a long random value, e.g.:
+# Paste your PostgreSQL connection strings (a free Neon database works well),
+# and set JWT_SECRET to a long random value, e.g.:
 node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"
 
-# 3. Create the database and load the Ghanaian seed data
-npx prisma migrate dev --name init     # also runs the seed automatically
-# (re-seed any time with: npm run db:seed)
+# 3. Create the tables and load the Ghanaian seed data
+npx prisma migrate deploy
+npx prisma db seed                     # wipes data first; refuses if real accounts exist
 
 # 4. Run it
 npm run dev                            # http://localhost:3000
@@ -37,9 +38,24 @@ Production build: `npm run build && npm start`.
 ### `.env`
 
 ```dotenv
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://…-pooler…/neondb?sslmode=require"   # pooled, used at runtime
+DATABASE_URL_UNPOOLED="postgresql://…/neondb?sslmode=require"   # direct, used by migrations
 JWT_SECRET="at-least-32-random-characters"
 ```
+
+Tip: in Neon, create a separate **branch** (e.g. `dev`) for local development so you never touch production data.
+
+---
+
+## Deploying to Vercel + Neon
+
+1. **Import the repo:** at [vercel.com/new](https://vercel.com/new), sign in with GitHub and import `efie-homes`. Keep the defaults (Framework: Next.js).
+2. **Add the database:** in the Vercel project, open **Storage → Create Database → Neon** and connect it to the project. This sets `DATABASE_URL` and `DATABASE_URL_UNPOOLED` automatically.
+3. **Add the secret:** under **Settings → Environment Variables**, add `JWT_SECRET` with a new random value (don't reuse your local one).
+4. **Deploy:** go to **Deployments** and redeploy. The `vercel-build` script runs `prisma migrate deploy` before `next build`, so the tables are created on every deploy.
+5. **(Optional) Demo data:** copy the two Neon URLs into your local `.env` and run `npx prisma db seed`. Only do this on a fresh database: it deletes all data.
+
+Every push to `main` then redeploys automatically.
 
 ### Demo accounts (password for all: `Password123`)
 
@@ -59,7 +75,8 @@ JWT_SECRET="at-least-32-random-characters"
 | `npm run dev` | Dev server |
 | `npm run build` / `npm start` | Production build / serve |
 | `npm run typecheck` | `tsc --noEmit` |
-| `npm run db:migrate` | `prisma migrate dev` |
+| `npm run db:migrate` | `prisma migrate dev` (create a new migration after schema changes) |
+| `npm run db:deploy` | `prisma migrate deploy` (apply migrations) |
 | `npm run db:seed` | Re-run `prisma/seed.ts` (wipes and reloads demo data) |
 | `npm run db:reset` | Drop, re-migrate and re-seed |
 | `npm run db:studio` | Browse data in Prisma Studio |
@@ -147,9 +164,9 @@ All endpoints take and return JSON. Validation failures return `422` with `{ err
 - **Amenities:** ECG Prepaid Meter, Ghana Water (GWCL) Flow, Borehole/Polytank Backup, Standby Generator/Solar, Walled & Gated, 24/7 Security, POP Ceiling, Air Conditioning, Parking Space.
 - **Phone validation:** Ghanaian numbers such as `024 123 4567` or `+233 24 123 4567`.
 
-## 5. Notes and switching to PostgreSQL
+## 5. Notes
 
-- SQLite has no enum or array column types. So role, type and status are stored as strings, checked by Zod. Images and amenities are stored as JSON strings.
-- To use PostgreSQL: set `provider = "postgresql"` in `schema.prisma`, point `DATABASE_URL` at your server, delete `prisma/migrations`, then run `npx prisma migrate dev --name init`. Free-text search is case-sensitive on Postgres unless you add `mode: "insensitive"` in `src/lib/properties.ts`.
+- Role, type and status are stored as strings and checked by Zod. Images and amenities are stored as JSON strings. (This dates from the original SQLite version and works fine on PostgreSQL.)
+- Location search is case-insensitive (`mode: "insensitive"` in `src/lib/properties.ts`).
 - Listing photos are entered as image URLs, and `<SafeImage>` shows a placeholder if a URL fails. To support file uploads, add a storage provider such as S3, Cloudinary or UploadThing.
 - On the login page, demo account hints appear only outside production (`NODE_ENV !== "production"`).

@@ -64,10 +64,10 @@ export function buildWhere(f: PropertyFilters): Prisma.PropertyWhereInput {
   if (f.location) {
     and.push({
       OR: [
-        { region: { contains: f.location } },
-        { neighborhood: { contains: f.location } },
-        { address: { contains: f.location } },
-        { title: { contains: f.location } },
+        { region: { contains: f.location, mode: "insensitive" } },
+        { neighborhood: { contains: f.location, mode: "insensitive" } },
+        { address: { contains: f.location, mode: "insensitive" } },
+        { title: { contains: f.location, mode: "insensitive" } },
       ],
     });
   }
