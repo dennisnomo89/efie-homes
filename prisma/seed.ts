@@ -739,6 +739,24 @@ async function main() {
     });
   }
 
+  // Renter profiles for two of the tenants (Abena has none, to show the empty state).
+  const firstOfMonthsAhead = (n: number) => {
+    const d = new Date();
+    return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + n, 1));
+  };
+  await prisma.renterProfile.createMany({
+    data: [
+      {
+        userId: ama.id,
+        occupation: "Software engineer",
+        householdSize: 4,
+        moveInFrom: firstOfMonthsAhead(1),
+        about: "Relocating to Accra with my husband and two children for a new job. Non-smokers, no pets.",
+      },
+      { userId: kofi.id, occupation: "Doctor at Komfo Anokye Teaching Hospital", householdSize: 1, moveInFrom: firstOfMonthsAhead(0) },
+    ],
+  });
+
   // A few in-app notifications so the bell isn't empty in the demo.
   const hoursAgo = (h: number) => new Date(Date.now() - h * 3_600_000);
   await prisma.notification.createMany({

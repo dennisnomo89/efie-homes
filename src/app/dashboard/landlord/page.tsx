@@ -6,6 +6,7 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
 import { MessageThread } from "@/components/dashboard/MessageThread";
 import { ViewingRequestActions } from "@/components/dashboard/ViewingRequestActions";
+import { RenterSummary } from "@/components/dashboard/RenterSummary";
 import { HideReviewButton, ReplyForm } from "@/components/reviews/ReviewActions";
 import { ReviewCard } from "@/components/reviews/ReviewCard";
 import { RatingSummaryLine } from "@/components/reviews/Stars";
@@ -40,7 +41,13 @@ export default async function LandlordDashboard({ searchParams }: Props) {
       orderBy: [{ createdAt: "desc" }],
       include: {
         property: { select: { id: true, title: true, neighborhood: true } },
-        tenant: { select: { name: true, email: true } },
+        tenant: {
+          select: {
+            name: true,
+            email: true,
+            renterProfile: { select: { occupation: true, householdSize: true, moveInFrom: true, about: true } },
+          },
+        },
       },
     }),
     // Landlords see every review of them (hidden ones too, flagged); admins see the latest reviews site-wide to moderate.
@@ -121,6 +128,7 @@ export default async function LandlordDashboard({ searchParams }: Props) {
                 <p className="mt-3 flex flex-1 gap-2 rounded-xl bg-sand p-3 text-sm text-stone-700">
                   <MessageSquareText className="mt-0.5 h-4 w-4 shrink-0 text-stone-500" /> {r.message}
                 </p>
+                <RenterSummary name={r.tenant.name} profile={r.tenant.renterProfile} />
                 <div className="mt-3">
                   <MessageThread
                     viewingId={r.id}

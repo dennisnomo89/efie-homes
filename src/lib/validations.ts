@@ -275,3 +275,43 @@ export const reportDecisionSchema = z.object({
   status: z.enum(["RESOLVED", "DISMISSED"], { error: "Choose an outcome" }),
   adminNote: z.string().trim().max(500).optional(),
 });
+
+/* ---------- Renter profile ---------- */
+
+export const RENTER_ABOUT_MAX = 300;
+
+/** "YYYY-MM" for the current month, in UTC (Ghana time). */
+export function currentMonth(now = new Date()): string {
+  return now.toISOString().slice(0, 7);
+}
+
+/** "YYYY-MM" `n` months after `month`. */
+export function addMonths(month: string, n: number): string {
+  const [y, m] = month.split("-").map(Number);
+  const d = new Date(Date.UTC(y, m - 1 + n, 1));
+  return d.toISOString().slice(0, 7);
+}
+
+const blankToNull = (v: unknown) => (typeof v === "string" && v.trim() === "" ? null : v);
+
+export const renterProfileSchema = z.object({
+  occupation: z.preprocess(blankToNull, z.string().trim().max(80, "Keep it under 80 characters").nullish()).transform((v) => v ?? null),
+  householdSize: z.preprocess(
+    (v) => (v === "" || v === undefined ? null : typeof v === "string" ? Number(v) : v),
+    z.number({ error: "Enter a number" }).int("Enter a whole number").min(1, "At least 1").max(20, "20 at most").nullable(),
+  ),
+  /** "YYYY-MM": this month up to two years ahead. */
+  moveInFrom: z.preprocess(
+    blankToNull,
+    z
+      .string()
+      .regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Pick a month")
+      .refine((m) => m >= currentMonth(), "Pick this month or later")
+      .refine((m) => m <= addMonths(currentMonth(), 24), "Pick a month within the next two years")
+      .nullish(),
+  ).transform((v) => v ?? null),
+  about: z
+    .preprocess(blankToNull, z.string().trim().max(RENTER_ABOUT_MAX, `Keep it under ${RENTER_ABOUT_MAX} characters`).nullish())
+    .transform((v) => v ?? null),
+});
+export type RenterProfileInput = z.input<typeof renterProfileSchema>;

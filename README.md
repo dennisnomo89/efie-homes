@@ -256,6 +256,12 @@ Known limitation: resetting a password doesn't sign out sessions that are alread
 - Admins can hide abusive reviews from the admin view of the landlord dashboard or the profile page; hidden reviews don't count towards averages.
 - The review keeps a copy of the listing title, so it survives the listing being deleted.
 
+## Renter profiles
+
+- Tenants can add a short renter profile under **Profile settings**: what they do, how many people are moving in, the month they want to move in, and a few words about themselves (all optional). Their dashboard suggests it until they do.
+- Landlords see it on each pending viewing request ("About Ama: Software engineer · Household of 4 · Moving in from Dec 2026"), and only for tenants who have sent them a request. Clearing every field deletes it.
+- API: `GET /api/profile/renter`, `PUT /api/profile/renter` `{ occupation?, householdSize?, moveInFrom?: "YYYY-MM", about? }` (tenants).
+
 ## Neighbourhood guides
 
 - `/areas` lists every neighbourhood with homes to rent, by region, with how many homes and the typical rent. `/areas/:slug` (e.g. `/areas/east-legon`) is the guide: typical (median) rent and range, typical rent per type of home, the advance most landlords ask for and what that comes to, the share furnished, the share with each essential (prepaid meter, GWCL water, borehole, standby power, walled & gated) and the homes themselves.

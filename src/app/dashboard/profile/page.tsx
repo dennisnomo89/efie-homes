@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { BadgeCheck } from "lucide-react";
 import { ProfileForm } from "@/components/dashboard/ProfileForm";
+import { RenterProfileForm } from "@/components/dashboard/RenterProfileForm";
+import { prisma } from "@/lib/prisma";
+import { dateToMonth } from "@/lib/renter";
 import { requireUser } from "@/lib/auth";
 import { formatDate } from "@/lib/utils";
 
@@ -8,6 +11,7 @@ export const metadata: Metadata = { title: "Profile settings" };
 
 export default async function ProfilePage() {
   const user = await requireUser(undefined, "/dashboard/profile");
+  const renter = user.role === "TENANT" ? await prisma.renterProfile.findUnique({ where: { userId: user.id } }) : null;
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center gap-3">
@@ -22,6 +26,18 @@ export default async function ProfilePage() {
       <ProfileForm
         initial={{ name: user.name, phone: user.phone ?? "", avatarUrl: user.avatarUrl ?? "", email: user.email, role: user.role }}
       />
+      {user.role === "TENANT" && (
+        <div className="mt-8 scroll-mt-24" id="renter-profile">
+          <RenterProfileForm
+            initial={{
+              occupation: renter?.occupation ?? "",
+              householdSize: renter?.householdSize ? String(renter.householdSize) : "",
+              moveInFrom: dateToMonth(renter?.moveInFrom ?? null),
+              about: renter?.about ?? "",
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

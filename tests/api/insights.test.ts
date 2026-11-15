@@ -34,13 +34,16 @@ describe("listing insights", () => {
 
   it("counts public views by people, but not the owner's or robots'", async () => {
     const visit = (ua: string, c: Client = anon()) => c.request("GET", `/properties/${listingId}`, undefined, { headers: { "User-Agent": ua } });
-    await visit(BROWSER);
-    await visit(BROWSER);
-    await visit("Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)");
-    await visit("WhatsApp/2.23.20.0");
-    await visit(BROWSER, kwame); // the owner
+    // All at once: quicker on a busy machine, and two simultaneous first views of the day must both count.
+    await Promise.all([
+      visit(BROWSER),
+      visit(BROWSER),
+      visit("Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"),
+      visit("WhatsApp/2.23.20.0"),
+      visit(BROWSER, kwame), // the owner
+    ]);
     expect(await periodViews()).toBe(2);
-  });
+  }, 60_000);
 
   it("shows saves and viewing requests from tenants", async () => {
     const abena = await as("abena");

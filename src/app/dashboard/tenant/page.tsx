@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BellPlus, CalendarCheck, CalendarDays, Clock, Heart, MapPin, MessageSquareText, Phone } from "lucide-react";
+import { BellPlus, CalendarCheck, CalendarDays, Clock, Heart, MapPin, MessageSquareText, Phone, UserRound } from "lucide-react";
 import { CancelViewingButton } from "@/components/dashboard/CancelViewingButton";
 import { MessageThread } from "@/components/dashboard/MessageThread";
 import { SavedSearchActions } from "@/components/dashboard/SavedSearchActions";
@@ -64,7 +64,7 @@ export default async function TenantDashboard({ searchParams }: Props) {
     unreadCounts(user.id, viewingIds),
     messageTotals(viewingIds),
     savedSearchesWithCounts(user.id),
-    prisma.user.findUnique({ where: { id: user.id }, select: { wishlistAlerts: true } }),
+    prisma.user.findUnique({ where: { id: user.id }, select: { wishlistAlerts: true, renterProfile: { select: { userId: true } } } }),
   ]);
 
   return (
@@ -75,6 +75,19 @@ export default async function TenantDashboard({ searchParams }: Props) {
         <StatCard icon={Clock} label="Awaiting reply" value={count("PENDING")} tone="gold" />
         <StatCard icon={CalendarCheck} label="Confirmed" value={count("CONFIRMED")} tone="forest" />
       </div>
+
+      {user.role === "TENANT" && !prefs?.renterProfile && (
+        <div className="flex flex-col gap-3 rounded-2xl border border-forest-200 bg-forest-50 p-4 sm:flex-row sm:items-center">
+          <UserRound className="h-6 w-6 shrink-0 text-forest-700" />
+          <p className="flex-1 text-sm text-stone-700">
+            <strong className="font-semibold text-ink">Tell landlords a little about you.</strong> What you do, how many people are moving in and when.
+            Only landlords you send a viewing request to can see it.
+          </p>
+          <Link href="/dashboard/profile#renter-profile" className="btn btn-sm btn-primary shrink-0">
+            Add renter profile
+          </Link>
+        </div>
+      )}
 
       <section id="viewings" className="scroll-mt-24">
         <div className="flex items-end justify-between gap-4">

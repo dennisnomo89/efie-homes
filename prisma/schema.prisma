@@ -46,6 +46,7 @@ model User {
   reviewsReceived     Review[]             @relation("ReviewLandlord")
   listingReports      ListingReport[]
   notifications       Notification[]
+  renterProfile       RenterProfile?
 }
 
 model Property {
@@ -284,4 +285,17 @@ model Notification {
 
   @@index([userId, createdAt])
   @@index([userId, readAt])
+}
+
+/// What a tenant tells landlords about themselves. Shown only to landlords they've sent a viewing request to.
+model RenterProfile {
+  userId        String    @id
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  occupation    String?
+  /// People who will live in the home, including the tenant
+  householdSize Int?
+  /// First day of the month they want to move in
+  moveInFrom    DateTime? @db.Date
+  about         String?
+  updatedAt     DateTime  @updatedAt
 }
