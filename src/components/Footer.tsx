@@ -60,7 +60,7 @@ export function Footer() {
         </div>
         {cols.map((col) => (
           <div key={col.title}>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-white">{col.title}</h3>
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-white">{col.title}</h2>
             <ul className="mt-4 space-y-2.5">
               {col.links.map((l) => (
                 <li key={l.href}>
@@ -74,7 +74,7 @@ export function Footer() {
         ))}
       </div>
       <div className="border-t border-white/10">
-        <div className="container flex flex-col gap-2 py-6 text-xs text-stone-500 sm:flex-row sm:items-center sm:justify-between">
+        <div className="container flex flex-col gap-2 py-6 text-xs text-stone-400 sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} Efie Homes. Made with care in Accra.</p>
           <p>Always inspect a property in person before paying any advance.</p>
         </div>

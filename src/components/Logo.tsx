@@ -12,7 +12,7 @@ export function Logo({ className, light = false }: { className?: string; light?:
         </svg>
       </span>
       <span className={cn("font-display text-xl font-semibold tracking-tight", light ? "text-white" : "text-ink")}>
-        Efie<span className="text-terracotta-500"> Homes</span>
+        Efie<span className={light ? "text-terracotta-400" : "text-terracotta-600"}> Homes</span>
       </span>
     </Link>
   );

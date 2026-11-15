@@ -10,11 +10,13 @@ type Props = {
   property: PropertyView;
   saved?: boolean;
   favoriteMode?: "tenant" | "unauth" | "landlord";
+  /** Cards visible without scrolling: load the photo immediately. */
+  priority?: boolean;
 };
 
 const HIGHLIGHT_AMENITIES = ["BOREHOLE_POLYTANK", "WALLED_GATED", "GENERATOR_SOLAR", "ECG_PREPAID"];
 
-export function PropertyCard({ property, saved = false, favoriteMode = "unauth" }: Props) {
+export function PropertyCard({ property, saved = false, favoriteMode = "unauth", priority = false }: Props) {
   const highlights = property.amenities.filter((a) => HIGHLIGHT_AMENITIES.includes(a)).slice(0, 2);
   const rented = property.status === "RENTED";
 
@@ -25,6 +27,8 @@ export function PropertyCard({ property, saved = false, favoriteMode = "unauth" 
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-sand">
         <SafeImage
+          priority={priority}
+          sizes="(min-width: 1280px) 400px, (min-width: 640px) 50vw, 100vw"
           src={property.images[0]}
           alt={property.title}
           className="h-full w-full object-cover transition duration-500 group-hover:scale-105"

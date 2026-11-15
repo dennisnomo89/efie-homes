@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, MessageCircle, Send, X } from "lucide-react";
 import { Portal } from "../ui/Portal";
+import { useDialogFocus } from "../ui/useDialogFocus";
 import { useToast } from "../ui/Toast";
 import { MESSAGE_MAX_LENGTH } from "@/lib/validations";
 import { cn } from "@/lib/utils";
@@ -43,6 +44,8 @@ export function MessageThread({ viewingId, withName, unread = 0, total = 0, auto
   const [sending, setSending] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const dirty = useRef(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(open, panelRef, "textarea");
   // Once the thread has been opened, its messages are read, so stop showing the badge.
   const [seen, setSeen] = useState(false);
   const badge = seen ? 0 : unread;
@@ -116,7 +119,7 @@ export function MessageThread({ viewingId, withName, unread = 0, total = 0, auto
         <MessageCircle className="h-4 w-4" />
         Messages{total > 0 ? ` (${total})` : ""}
         {badge > 0 && (
-          <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-terracotta-500 px-1.5 text-[11px] font-bold text-white">
+          <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-terracotta-600 px-1.5 text-[11px] font-bold text-white">
             {badge}
           </span>
         )}
@@ -126,7 +129,7 @@ export function MessageThread({ viewingId, withName, unread = 0, total = 0, auto
         <Portal>
           <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby={`thread-${viewingId}`}>
             <div className="absolute inset-0 animate-fade-in bg-ink/50 backdrop-blur-sm" onClick={close} />
-            <div className="relative flex h-[85vh] w-full max-w-lg animate-slide-up flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:h-[640px] sm:rounded-3xl">
+            <div ref={panelRef} className="relative flex h-[85vh] w-full max-w-lg animate-slide-up flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:h-[640px] sm:rounded-3xl">
               <div className="flex items-start justify-between gap-3 border-b border-stone-100 px-5 py-4">
                 <div className="min-w-0">
                   <h2 id={`thread-${viewingId}`} className="truncate font-semibold">

@@ -19,6 +19,9 @@ const securityHeaders = [
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Always put <title>, description and share tags in <head> (not streamed later), for every crawler
+  // and preview tool, not just the ones Next.js recognises. Our metadata is a single fast query.
+  htmlLimitedBots: /.*/,
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

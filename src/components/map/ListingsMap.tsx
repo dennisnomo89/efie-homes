@@ -7,6 +7,7 @@ import { useEffect, useMemo } from "react";
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import { propertyTypeLabel, REGION_CENTERS } from "@/lib/constants";
 import type { MapPin } from "@/lib/properties";
+import { SafeImage } from "../ui/SafeImage";
 import { formatCedis, formatCedisCompact } from "@/lib/utils";
 
 export const OSM_TILES = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
@@ -18,8 +19,8 @@ function priceIcon(pin: MapPin) {
   return L.divIcon({
     className: "", // drop Leaflet's default white box
     html: `<span class="efie-price-pin">${formatCedisCompact(pin.monthlyRent)}</span>`,
-    iconSize: undefined,
-    iconAnchor: [28, 30],
+    iconSize: [56, 32], // a real hit area for taps; the pill may be wider and overflows visibly
+    iconAnchor: [28, 32],
     popupAnchor: [0, -28],
   });
 }
@@ -52,8 +53,7 @@ export default function ListingsMap({ pins }: { pins: MapPin[] }) {
           <Popup minWidth={220} maxWidth={260}>
             <Link href={`/properties/${p.id}`} className="block w-[220px] text-ink no-underline">
               {p.image && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={p.image} alt="" className="mb-2 h-28 w-full rounded-lg object-cover" loading="lazy" />
+                <SafeImage src={p.image} alt="" sizes="220px" className="mb-2 h-28 w-full rounded-lg object-cover" />
               )}
               <span className="block font-display text-base font-semibold text-forest-800">{formatCedis(p.monthlyRent)} / month</span>
               <span className="mt-0.5 line-clamp-2 block text-sm font-semibold leading-snug">{p.title}</span>

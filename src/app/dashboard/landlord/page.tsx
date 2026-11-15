@@ -134,7 +134,7 @@ export default async function LandlordDashboard({ searchParams }: Props) {
             <summary className="cursor-pointer select-none px-5 py-4 text-sm font-semibold">
               Recently answered ({responded.length})
               {respondedUnread > 0 && (
-                <span className="ml-2 rounded-full bg-terracotta-500 px-2 py-0.5 text-xs font-bold text-white">{respondedUnread} unread</span>
+                <span className="ml-2 rounded-full bg-terracotta-600 px-2 py-0.5 text-xs font-bold text-white">{respondedUnread} unread</span>
               )}
             </summary>
             <ul className="divide-y divide-stone-100 border-t border-stone-100">
@@ -205,7 +205,7 @@ export default async function LandlordDashboard({ searchParams }: Props) {
           <ul className="mt-5 space-y-3">
             {shown.map((l) => (
               <li key={l.id} className="card flex flex-col gap-4 p-4 md:flex-row md:items-center">
-                <SafeImage src={parseJsonArray(l.images)[0]} alt="" className="aspect-[4/3] w-full shrink-0 rounded-xl object-cover md:h-24 md:w-32" />
+                <SafeImage src={parseJsonArray(l.images)[0]} alt="" sizes="(min-width: 768px) 128px, 100vw" className="aspect-[4/3] w-full shrink-0 rounded-xl object-cover md:h-24 md:w-32" />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <StatusBadge status={l.status} />

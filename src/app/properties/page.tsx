@@ -141,11 +141,16 @@ export default async function PropertiesPage({ searchParams }: Props) {
               />
             </div>
           ) : (
-            <div className="mt-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-              {properties.map((p) => (
-                <PropertyCard key={p.id} property={p} saved={savedIds.has(p.id)} favoriteMode={favoriteMode} />
-              ))}
-            </div>
+            <section aria-labelledby="results-heading">
+              <h2 id="results-heading" className="sr-only">
+                Search results
+              </h2>
+              <div className="mt-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                {properties.map((p, i) => (
+                  <PropertyCard key={p.id} property={p} saved={savedIds.has(p.id)} favoriteMode={favoriteMode} priority={i < 2} />
+                ))}
+              </div>
+            </section>
           )}
 
           {!isMap && pageCount > 1 && (
@@ -189,7 +194,8 @@ function PageLink({
     active ? "border-forest-800 bg-forest-800 text-white" : "border-stone-300 bg-white hover:border-forest-700",
     disabled && "pointer-events-none opacity-40",
   );
-  if (disabled) return <span className={cls} aria-disabled="true" aria-label={label}>{children}</span>;
+  // A disabled arrow does nothing, so hide it from screen readers rather than announce a dead control.
+  if (disabled) return <span className={cls} aria-hidden="true">{children}</span>;
   return (
     <Link href={`/properties${filtersToQuery({ ...filters, page })}`} className={cls} aria-label={label} aria-current={active ? "page" : undefined}>
       {children}

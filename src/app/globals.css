@@ -34,7 +34,7 @@
     @apply bg-forest-800 text-white shadow-sm hover:bg-forest-900;
   }
   .btn-accent {
-    @apply bg-terracotta-500 text-white shadow-sm hover:bg-terracotta-600;
+    @apply bg-terracotta-600 text-white shadow-sm hover:bg-terracotta-700;
   }
   .btn-gold {
     @apply bg-gold-400 text-ink shadow-sm hover:bg-gold-500;
@@ -112,7 +112,8 @@
 /* ---------- Map markers (Leaflet) ---------- */
 @layer components {
   .efie-price-pin {
-    @apply inline-flex -translate-x-0 items-center whitespace-nowrap rounded-full border-2 border-white bg-forest-800 px-2.5 py-1 font-sans text-xs font-bold text-white shadow-lift transition hover:scale-110 hover:bg-terracotta-500;
+    /* min 28px tall so pins are comfortable tap targets */
+    @apply inline-flex min-h-[28px] min-w-[44px] items-center justify-center whitespace-nowrap rounded-full border-2 border-white bg-forest-800 px-3 py-1 font-sans text-xs font-bold text-white shadow-lift transition hover:scale-110 hover:bg-terracotta-600;
   }
   .efie-pick-pin {
     @apply block h-7 w-7 rounded-full rounded-br-none border-[3px] border-white bg-terracotta-500 shadow-lift;

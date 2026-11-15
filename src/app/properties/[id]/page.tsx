@@ -150,7 +150,7 @@ export default async function PropertyDetailPage({ params }: Props) {
                     key={a.value}
                     className={cn(
                       "flex items-center gap-3 rounded-xl border p-3 text-sm",
-                      has ? "border-forest-200 bg-forest-50/60 text-ink" : "border-stone-200 bg-white text-stone-400 line-through",
+                      has ? "border-forest-200 bg-forest-50/60 text-ink" : "border-stone-200 bg-white text-stone-500 line-through",
                     )}
                   >
                     <span className={cn("flex h-9 w-9 items-center justify-center rounded-lg", has ? "bg-white text-forest-700 shadow-sm" : "bg-stone-100")}>

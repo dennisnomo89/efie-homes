@@ -1,11 +1,12 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Loader2, RotateCcw, SlidersHorizontal, X } from "lucide-react";
 import { ADVANCE_OPTIONS, AMENITIES, NEIGHBORHOODS, PROPERTY_TYPES, REGIONS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { Portal } from "./ui/Portal";
+import { useDialogFocus } from "./ui/useDialogFocus";
 
 type State = {
   location: string;
@@ -45,6 +46,8 @@ export function FilterSidebar() {
   const sp = useSearchParams();
   const [state, setState] = useState<State>(() => fromParams(sp));
   const [open, setOpen] = useState(false);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(open, drawerRef);
   const [pending, startTransition] = useTransition();
   const active = countActiveFilters(sp);
 
@@ -53,8 +56,11 @@ export function FilterSidebar() {
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    if (open) document.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = "";
+      document.removeEventListener("keydown", onKey);
     };
   }, [open]);
 
@@ -218,7 +224,7 @@ export function FilterSidebar() {
         <Portal>
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Filters">
           <div className="absolute inset-0 animate-fade-in bg-ink/40 backdrop-blur-sm" onClick={() => setOpen(false)} />
-          <div className="absolute inset-x-0 bottom-0 flex max-h-[90vh] animate-slide-up flex-col rounded-t-3xl bg-cream shadow-2xl">
+          <div ref={drawerRef} className="absolute inset-x-0 bottom-0 flex max-h-[90vh] animate-slide-up flex-col rounded-t-3xl bg-cream shadow-2xl">
             <div className="flex items-center justify-between border-b border-stone-200 px-5 py-4">
               <h2 className="text-lg font-semibold">Filters</h2>
               <button onClick={() => setOpen(false)} className="flex h-11 w-11 items-center justify-center rounded-xl hover:bg-stone-100" aria-label="Close filters">

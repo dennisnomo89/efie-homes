@@ -30,7 +30,7 @@ const config: Config = {
           300: "#ecaa8c",
           400: "#e2805c",
           500: "#d9633d",
-          600: "#c84d30",
+          600: "#b8442a", // darkened for 4.5:1 text contrast on cream/white
           700: "#a63c29",
           800: "#853327",
           900: "#6c2d23",
@@ -40,8 +40,10 @@ const config: Config = {
           300: "#f6d488",
           400: "#f2c14e",
           500: "#e3a92b",
-          600: "#c58a1b",
+          600: "#85560b", // darkened for 4.5:1 text contrast on gold-100
         },
+        // Slightly darker than the default stone-500 so small grey text passes WCAG AA on cream/sand.
+        stone: { 500: "#6b655f" },
         cream: "#faf7f2",
         sand: "#f3ede3",
         ink: "#1c1917",

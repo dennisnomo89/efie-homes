@@ -55,6 +55,8 @@ export default async function HomePage() {
       {/* ---------- Hero ---------- */}
       <section className="relative isolate overflow-hidden">
         <SafeImage
+          priority
+          sizes="100vw"
           src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=2000&q=75"
           alt=""
           className="absolute inset-0 -z-20 h-full w-full object-cover"
@@ -131,7 +133,7 @@ export default async function HomePage() {
               href={`/properties?location=${encodeURIComponent(n.name)}`}
               className={`group relative overflow-hidden rounded-2xl ${i === 0 ? "col-span-2 row-span-2 aspect-square sm:aspect-auto" : "aspect-[4/3]"}`}
             >
-              <SafeImage src={n.image} alt={n.name} className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+              <SafeImage src={n.image} alt={n.name} sizes={i === 0 ? "(min-width: 1024px) 50vw, 100vw" : "(min-width: 1024px) 25vw, 50vw"} className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105" />
               <div className="absolute inset-0 bg-gradient-to-t from-ink/80 via-ink/20 to-transparent" />
               <div className="absolute inset-x-0 bottom-0 p-4">
                 <p className="font-display text-lg font-semibold text-white sm:text-xl">{n.name}</p>
@@ -199,9 +201,7 @@ export default async function HomePage() {
                 <Row label={`1 Year Advance (12 × ${formatCedis(EXAMPLE.monthlyRent)})`} value={formatCedis(exampleCost.advance)} />
                 <Row label={`Agent commission (${EXAMPLE.agentFeePercent}%)`} value={formatCedis(exampleCost.agentFee)} />
                 <Row label="Security deposit" value={formatCedis(exampleCost.securityDeposit)} />
-                <div className="border-t border-dashed border-stone-300 pt-3">
-                  <Row label="Total to move in" value={formatCedis(exampleCost.total)} strong />
-                </div>
+                <Row label="Total to move in" value={formatCedis(exampleCost.total)} strong />
               </dl>
             </div>
           </div>
@@ -261,7 +261,7 @@ export default async function HomePage() {
 
       {/* ---------- Landlord CTA ---------- */}
       <section className="container mt-20 sm:mt-24">
-        <div className="relative overflow-hidden rounded-3xl bg-terracotta-500 px-6 py-12 text-white sm:px-12">
+        <div className="relative overflow-hidden rounded-3xl bg-terracotta-600 px-6 py-12 text-white sm:px-12">
           <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-gold-400/30" />
           <div className="absolute -bottom-20 right-24 h-48 w-48 rounded-full bg-terracotta-700/40" />
           <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
@@ -292,7 +292,8 @@ function Stat({ value, label }: { value: string; label: string }) {
 
 function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
-    <div className="flex items-center justify-between gap-4">
+    // Each row is a direct child of the <dl> so screen readers pair the term with its value.
+    <div className={strong ? "flex items-center justify-between gap-4 border-t border-dashed border-stone-300 pt-3" : "flex items-center justify-between gap-4"}>
       <dt className={strong ? "font-semibold" : "text-stone-600"}>{label}</dt>
       <dd className={strong ? "font-display text-xl font-semibold text-forest-800" : "font-medium"}>{value}</dd>
     </div>

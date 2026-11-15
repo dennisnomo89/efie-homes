@@ -245,6 +245,15 @@ Known limitation: resetting a password doesn't sign out sessions that are alread
 - **Share button** on listing pages: the phone's share sheet where supported, otherwise WhatsApp, Facebook and "copy link".
 - **Custom domain:** set `APP_URL` (e.g. `https://efiehomes.com.gh`) so links in previews, the sitemap and emails use it; otherwise Vercel's production domain is used. After the site has its final domain, submit `/sitemap.xml` in [Google Search Console](https://search.google.com/search-console).
 
+## Accessibility & speed
+
+- **Audited with Lighthouse** (mobile, slow 4G). Accessibility is 100 on the home, listings, listing, login and dashboard pages, and 97 on the map view (remaining items are Leaflet's own tiles and overlapping pins). Best practices are 100.
+- **Contrast:** the palette's `stone-500`, `terracotta-600` and `gold-600` are darkened so small text meets WCAG AA (4.5:1) on the cream backgrounds. Use `terracotta-600`, not `500`, for text and for backgrounds behind white text.
+- **Dialogs and drawers** use `useDialogFocus` (`src/components/ui/useDialogFocus.ts`): focus moves in on open, Tab stays inside, and focus returns to the opening button on close. All close with Escape.
+- **Images:** `SafeImage` adds a `srcset` for Unsplash photos so phones download small versions; pass `sizes`, and `priority` for the main above-the-fold image. This cut page weight by 27–39%.
+- **Metadata in `<head>`:** `htmlLimitedBots: /.*/` in `next.config.mjs` makes Next.js put titles, descriptions and share tags in `<head>` for every visitor, not only recognised crawlers.
+- **Server region:** `vercel.json` runs functions in Frankfurt (`fra1`), next to the Neon database (also Frankfurt). If your live Neon database is in another region, change `regions` to match: every page makes several database queries, so a cross-continent hop adds up quickly.
+
 ## Security
 
 - **Passwords:** bcrypt (cost 12); login gives the same answer for a wrong email or a wrong password.

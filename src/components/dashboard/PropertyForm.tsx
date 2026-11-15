@@ -338,7 +338,7 @@ export function PropertyForm({
             <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
               {v.images.map((src, i) => (
                 <li key={src} className="group relative overflow-hidden rounded-xl border border-stone-200 bg-white">
-                  <SafeImage src={src} alt={`Photo ${i + 1}`} className="aspect-[4/3] w-full object-cover" />
+                  <SafeImage src={src} alt={`Photo ${i + 1}`} sizes="(min-width: 640px) 220px, 50vw" className="aspect-[4/3] w-full object-cover" />
                   {i === 0 && <span className="badge absolute left-2 top-2 bg-gold-400 text-ink">Cover</span>}
                   <div className="flex justify-between p-1.5">
                     <div className="flex">

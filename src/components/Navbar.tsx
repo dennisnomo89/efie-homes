@@ -19,6 +19,7 @@ import {
 import { Logo } from "./Logo";
 import { useToast } from "./ui/Toast";
 import { Portal } from "./ui/Portal";
+import { useDialogFocus } from "./ui/useDialogFocus";
 import { cn, initials } from "@/lib/utils";
 
 export type NavUser = { name: string; role: string; avatarUrl: string | null } | null;
@@ -30,6 +31,8 @@ export function Navbar({ user }: { user: NavUser }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(drawerOpen, drawerRef);
 
   const isLandlord = user?.role === "LANDLORD" || user?.role === "ADMIN";
   const dashboardHref = !user
@@ -169,7 +172,7 @@ export function Navbar({ user }: { user: NavUser }) {
         <Portal>
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
           <div className="absolute inset-0 animate-fade-in bg-ink/40 backdrop-blur-sm" onClick={() => setDrawerOpen(false)} />
-          <div className="absolute inset-y-0 right-0 flex w-[86%] max-w-sm animate-slide-in-right flex-col bg-cream shadow-2xl">
+          <div ref={drawerRef} className="absolute inset-y-0 right-0 flex w-[86%] max-w-sm animate-slide-in-right flex-col bg-cream shadow-2xl">
             <div className="flex h-16 items-center justify-between border-b border-stone-200 px-4">
               <Logo />
               <button onClick={() => setDrawerOpen(false)} className="flex h-11 w-11 items-center justify-center rounded-xl hover:bg-stone-100" aria-label="Close menu">

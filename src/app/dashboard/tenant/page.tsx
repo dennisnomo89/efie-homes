@@ -90,7 +90,7 @@ export default async function TenantDashboard({ searchParams }: Props) {
               return (
                 <li key={v.id} className="card flex flex-col gap-4 p-4 sm:flex-row sm:flex-wrap sm:items-center">
                   <Link href={`/properties/${v.property.id}`} className="flex min-w-0 flex-1 items-center gap-4">
-                    <SafeImage src={img} alt="" className="h-20 w-24 shrink-0 rounded-xl object-cover" />
+                    <SafeImage src={img} alt="" sizes="96px" className="h-20 w-24 shrink-0 rounded-xl object-cover" />
                     <div className="min-w-0">
                       <p className="line-clamp-1 font-semibold hover:text-forest-800">{v.property.title}</p>
                       <p className="mt-0.5 flex items-center gap-1 text-sm text-stone-600">
@@ -160,7 +160,7 @@ export default async function TenantDashboard({ searchParams }: Props) {
                 <div className="min-w-0 flex-1">
                   <p className="flex flex-wrap items-center gap-2 font-semibold">
                     <span className="truncate">{s.name}</span>
-                    {s.newSince > 0 && <span className="badge bg-terracotta-500 text-white">{s.newSince} new</span>}
+                    {s.newSince > 0 && <span className="badge bg-terracotta-600 text-white">{s.newSince} new</span>}
                   </p>
                   <p className="text-sm text-stone-600">
                     {s.total} {s.total === 1 ? "home matches" : "homes match"} now · saved {formatDate(s.createdAt)}

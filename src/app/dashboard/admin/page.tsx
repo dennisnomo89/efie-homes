@@ -178,7 +178,7 @@ export default async function AdminDashboard({ searchParams }: Props) {
             <ul className="mt-5 space-y-3">
               {listings.map((p) => (
                 <li key={p.id} className={cn("card flex flex-col gap-4 p-4 md:flex-row md:items-center", p.isHidden && "border-terracotta-200 bg-terracotta-50/40")}>
-                  <SafeImage src={parseJsonArray(p.images)[0]} alt="" className={cn("aspect-[4/3] w-full shrink-0 rounded-xl object-cover md:h-20 md:w-28", p.isHidden && "opacity-60")} />
+                  <SafeImage src={parseJsonArray(p.images)[0]} alt="" sizes="(min-width: 768px) 112px, 100vw" className={cn("aspect-[4/3] w-full shrink-0 rounded-xl object-cover md:h-20 md:w-28", p.isHidden && "opacity-60")} />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <StatusBadge status={p.status} />

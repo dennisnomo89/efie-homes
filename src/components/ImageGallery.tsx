@@ -1,14 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Expand, X } from "lucide-react";
 import { SafeImage } from "./ui/SafeImage";
 import { Portal } from "./ui/Portal";
+import { useDialogFocus } from "./ui/useDialogFocus";
 import { cn } from "@/lib/utils";
 
 export function ImageGallery({ images, title }: { images: string[]; title: string }) {
   const [index, setIndex] = useState(0);
   const [lightbox, setLightbox] = useState(false);
+  const viewerRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(lightbox, viewerRef);
   const count = images.length;
 
   const go = useCallback((delta: number) => setIndex((i) => (i + delta + count) % count), [count]);
@@ -37,7 +40,7 @@ export function ImageGallery({ images, title }: { images: string[]; title: strin
       <div className="grid gap-2 sm:grid-cols-4 sm:grid-rows-2">
         <div className="relative overflow-hidden rounded-3xl sm:col-span-3 sm:row-span-2 sm:rounded-r-none">
           <button onClick={() => setLightbox(true)} className="block w-full" aria-label="Open photo viewer">
-            <SafeImage src={images[index]} alt={`${title} — photo ${index + 1}`} className="aspect-[4/3] w-full object-cover sm:aspect-[16/10]" />
+            <SafeImage priority sizes="(min-width: 1280px) 960px, (min-width: 640px) 75vw, 100vw" src={images[index]} alt={`${title} — photo ${index + 1}`} className="aspect-[4/3] w-full object-cover sm:aspect-[16/10]" />
           </button>
           {count > 1 && (
             <>
@@ -60,7 +63,7 @@ export function ImageGallery({ images, title }: { images: string[]; title: strin
             )}
             aria-label={`Show photo ${i + 2}`}
           >
-            <SafeImage src={src} alt="" className="h-full w-full object-cover transition hover:scale-105" />
+            <SafeImage src={src} alt="" sizes="(min-width: 1280px) 320px, 25vw" className="h-full w-full object-cover transition hover:scale-105" />
             {i === 1 && count > 3 && (
               <span className="absolute inset-0 flex items-center justify-center bg-ink/50 text-lg font-semibold text-white">+{count - 3} photos</span>
             )}
@@ -73,7 +76,7 @@ export function ImageGallery({ images, title }: { images: string[]; title: strin
         <div className="scrollbar-none mt-2 flex gap-2 overflow-x-auto sm:hidden">
           {images.map((src, i) => (
             <button key={src + i} onClick={() => setIndex(i)} className={cn("h-16 w-20 shrink-0 overflow-hidden rounded-xl", i === index && "ring-2 ring-forest-700")} aria-label={`Show photo ${i + 1}`}>
-              <SafeImage src={src} alt="" className="h-full w-full object-cover" />
+              <SafeImage src={src} alt="" sizes="80px" className="h-full w-full object-cover" />
             </button>
           ))}
         </div>
@@ -81,11 +84,11 @@ export function ImageGallery({ images, title }: { images: string[]; title: strin
 
       {lightbox && (
         <Portal>
-        <div className="fixed inset-0 z-[60] flex animate-fade-in items-center justify-center bg-ink/95 p-4" role="dialog" aria-modal="true" aria-label="Photo viewer">
+        <div ref={viewerRef} className="fixed inset-0 z-[60] flex animate-fade-in items-center justify-center bg-ink/95 p-4" role="dialog" aria-modal="true" aria-label="Photo viewer">
           <button onClick={() => setLightbox(false)} className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20" aria-label="Close">
             <X className="h-6 w-6" />
           </button>
-          <SafeImage src={images[index]} alt={`${title} — photo ${index + 1}`} className="max-h-[85vh] max-w-full rounded-2xl object-contain" />
+          <SafeImage sizes="100vw" src={images[index]} alt={`${title} — photo ${index + 1}`} className="max-h-[85vh] max-w-full rounded-2xl object-contain" />
           {count > 1 && (
             <>
               <NavButton side="left" onClick={() => go(-1)} large />

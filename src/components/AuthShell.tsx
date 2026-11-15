@@ -11,6 +11,7 @@ export function AuthShell({ title, subtitle, children }: { title: string; subtit
       </div>
       <div className="relative hidden h-full max-h-[640px] overflow-hidden rounded-3xl lg:block">
         <SafeImage
+          sizes="(min-width: 1024px) 50vw, 1px"
           src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=75"
           alt=""
           className="absolute inset-0 h-full w-full object-cover"

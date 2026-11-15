@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { CalendarDays, Loader2, X } from "lucide-react";
 import { useToast } from "./ui/Toast";
 import { Portal } from "./ui/Portal";
+import { useDialogFocus } from "./ui/useDialogFocus";
 import { VIEWING_TIME_SLOTS } from "@/lib/constants";
 import { viewingRequestSchema, fieldErrors } from "@/lib/validations";
 import { cn, formatTime } from "@/lib/utils";
@@ -28,6 +29,7 @@ export function ScheduleViewingModal({ propertyId, propertyTitle, viewer, rented
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const dialogRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(open, dialogRef, "input");
 
   const today = new Date();
   const tomorrow = new Date(today.getTime() + 86_400_000);
@@ -45,7 +47,6 @@ export function ScheduleViewingModal({ propertyId, propertyTitle, viewer, rented
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
-    dialogRef.current?.querySelector<HTMLInputElement>("input")?.focus();
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
