@@ -315,3 +315,18 @@ export const renterProfileSchema = z.object({
     .transform((v) => v ?? null),
 });
 export type RenterProfileInput = z.input<typeof renterProfileSchema>;
+
+/* ---------- Landlord viewing hours ---------- */
+
+const slotList = z
+  .array(z.enum(VIEWING_TIME_SLOTS as [string, ...string[]], { error: "Pick a listed time" }))
+  .max(VIEWING_TIME_SLOTS.length)
+  .refine((v) => new Set(v).size === v.length, "Each time only once");
+
+/** { hours: { "0".."6": ["09:00", ...] } } or { hours: null } for "any listed time". */
+export const viewingHoursSchema = z.object({
+  hours: z
+    .partialRecord(z.enum(["0", "1", "2", "3", "4", "5", "6"], { error: "Unknown day" }), slotList)
+    .nullable()
+    .refine((h) => h === null || Object.values(h).some((v) => v && v.length > 0), "Pick at least one time, or allow any time"),
+});

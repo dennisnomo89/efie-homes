@@ -42,6 +42,31 @@ export function ScheduleViewingModal({ propertyId, propertyTitle, viewer, rented
     message: `Hello, I'm interested in "${propertyTitle}" and would like to arrange a viewing. Is it still available?`,
   });
 
+  // Which times the landlord can do on the chosen date (their viewing hours, minus confirmed bookings).
+  const [slots, setSlots] = useState<{ time: string; available: boolean; reason: "off" | "booked" | null }[] | null>(null);
+  useEffect(() => {
+    if (!open || !/^\d{4}-\d{2}-\d{2}$/.test(form.preferredDate)) return;
+    let cancelled = false;
+    setSlots(null);
+    fetch(`/api/properties/${propertyId}/slots?date=${form.preferredDate}`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        setSlots(data.slots);
+        // Keep the chosen time if it's still free, otherwise move to the first free one.
+        setForm((f) => {
+          const free = (data.slots as { time: string; available: boolean }[]).filter((s) => s.available);
+          return free.some((s) => s.time === f.preferredTime) || free.length === 0 ? f : { ...f, preferredTime: free[0].time };
+        });
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [open, form.preferredDate, propertyId]);
+  const slotState = (t: string) => slots?.find((s) => s.time === t);
+  const noneFree = slots !== null && !slots.some((s) => s.available);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
@@ -152,19 +177,36 @@ export function ScheduleViewingModal({ propertyId, propertyTitle, viewer, rented
               <div>
                 <span className="label">Preferred time</span>
                 <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Time slot">
-                  {VIEWING_TIME_SLOTS.map((slot) => (
-                    <button
-                      key={slot}
-                      type="button"
-                      role="radio"
-                      aria-checked={form.preferredTime === slot}
-                      onClick={() => update("preferredTime", slot)}
-                      className={cn("chip", form.preferredTime === slot && "chip-active")}
-                    >
-                      {formatTime(slot)}
-                    </button>
-                  ))}
+                  {VIEWING_TIME_SLOTS.map((slot) => {
+                    const state = slotState(slot);
+                    const unavailable = state ? !state.available : false;
+                    return (
+                      <button
+                        key={slot}
+                        type="button"
+                        role="radio"
+                        aria-checked={form.preferredTime === slot && !unavailable}
+                        disabled={unavailable}
+                        title={state?.reason === "booked" ? "Already booked" : state?.reason === "off" ? "The landlord isn't available then" : undefined}
+                        onClick={() => update("preferredTime", slot)}
+                        className={cn(
+                          "chip",
+                          form.preferredTime === slot && !unavailable && "chip-active",
+                          unavailable && "cursor-not-allowed opacity-40 line-through",
+                        )}
+                      >
+                        {formatTime(slot)}
+                      </button>
+                    );
+                  })}
                 </div>
+                {slots === null && <p className="mt-1.5 text-xs text-stone-500">Checking the landlord&rsquo;s available times…</p>}
+                {noneFree && (
+                  <p className="mt-2 text-sm text-terracotta-700">The landlord isn&rsquo;t showing this home on that day. Please pick another date.</p>
+                )}
+                {slots && !noneFree && slots.some((s) => !s.available) && (
+                  <p className="mt-1.5 text-xs text-stone-500">Crossed-out times are outside the landlord&rsquo;s viewing hours or already booked.</p>
+                )}
                 {errors.preferredTime && <p className="field-error">{errors.preferredTime}</p>}
               </div>
 
@@ -203,7 +245,7 @@ export function ScheduleViewingModal({ propertyId, propertyTitle, viewer, rented
                 <button type="button" onClick={() => setOpen(false)} className="btn btn-outline">
                   Cancel
                 </button>
-                <button type="submit" disabled={submitting} className="btn btn-primary">
+                <button type="submit" disabled={submitting || noneFree} className="btn btn-primary">
                   {submitting && <Loader2 className="h-4 w-4 animate-spin" />} Send request
                 </button>
               </div>

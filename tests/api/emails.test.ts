@@ -24,10 +24,10 @@ describe.skipIf(!outboxEnabled)("viewing request emails", () => {
     if (listingId) await kwame.delete(`/api/properties/${listingId}`);
   });
 
-  const request = (message: string) => ({
+  const request = (message: string, preferredTime = "15:00") => ({
     propertyId: listingId,
     preferredDate: isoDay(3),
-    preferredTime: "15:00",
+    preferredTime,
     phone: "0501234567",
     message,
   });
@@ -60,7 +60,9 @@ describe.skipIf(!outboxEnabled)("viewing request emails", () => {
 
   it("emails the landlord when a tenant cancels", async () => {
     const kofi = await as("kofi");
-    const created = await kofi.post("/api/viewings", request("Please, I would like to come and see it."));
+    // 15:00 that day is already confirmed for Abena (above), so ask for another time.
+    const created = await kofi.post("/api/viewings", request("Please, I would like to come and see it.", "16:00"));
+    expect(created.status).toBe(201);
     const start = new Date();
     expect((await kofi.delete(`/api/viewings/${created.body.viewing.id}`)).status).toBe(200);
     const emails = await waitForEmails(KWAME, start, 1, 10_000, "cancelled");

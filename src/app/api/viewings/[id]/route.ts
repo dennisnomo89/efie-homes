@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { fail, guard, ok, readJson, validationFailed } from "@/lib/api";
 import { notifyViewingAnswered, notifyViewingCancelled } from "@/lib/notifications";
 import { viewingStatusSchema } from "@/lib/validations";
+import { bookedTimes } from "@/lib/viewing-slots";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -23,6 +24,14 @@ export async function PATCH(req: Request, { params }: Ctx) {
 
   const parsed = viewingStatusSchema.safeParse(await readJson(req));
   if (!parsed.success) return validationFailed(parsed.error);
+
+  if (parsed.data.status === "CONFIRMED") {
+    const day = viewing.preferredDate.toISOString().slice(0, 10);
+    const taken = await bookedTimes(viewing.propertyId, day, viewing.id);
+    if (taken.includes(viewing.preferredTime)) {
+      return fail("You've already confirmed another viewing of this home at that time. Decline this one or suggest another time in a message.", 409);
+    }
+  }
 
   const updated = await prisma.viewingRequest.update({
     where: { id },

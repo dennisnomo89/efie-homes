@@ -256,6 +256,14 @@ Known limitation: resetting a password doesn't sign out sessions that are alread
 - Admins can hide abusive reviews from the admin view of the landlord dashboard or the profile page; hidden reviews don't count towards averages.
 - The review keeps a copy of the listing title, so it survives the listing being deleted.
 
+## Viewing hours (landlords)
+
+- Under **Profile settings**, landlords choose when they can show homes: **any listed time** (the default) or a weekly grid of one-hour slots (9am to 5pm, Monday to Sunday), with quick-fill presets.
+- When a tenant books, the dialog only offers that landlord's times for the chosen date; times outside the hours, or already confirmed for that home, are crossed out. The server checks again when the request is sent (`slotProblem` in `src/lib/viewing-slots.ts`).
+- A landlord can't confirm two viewings of the same home at the same date and time (409); other tenants may still *ask* for a time that's only pending.
+- Hours are stored on the user as `{ "0".."6": ["09:00", ...] }` (0 = Sunday; Ghana time = UTC).
+- API: `GET/PUT /api/profile/viewing-hours` `{ hours: {...} | null }` (landlords), `GET /api/properties/:id/slots?date=YYYY-MM-DD` (public; times only, never who booked).
+
 ## Renter profiles
 
 - Tenants can add a short renter profile under **Profile settings**: what they do, how many people are moving in, the month they want to move in, and a few words about themselves (all optional). Their dashboard suggests it until they do.

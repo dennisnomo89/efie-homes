@@ -739,6 +739,13 @@ async function main() {
     });
   }
 
+  // Yaw only shows homes on weekdays 9am-5pm and Saturday mornings (the others accept any listed time).
+  const allDay = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00"];
+  await prisma.user.update({
+    where: { id: yaw.id },
+    data: { viewingHours: { "1": allDay, "2": allDay, "3": allDay, "4": allDay, "5": allDay, "6": ["09:00", "10:00", "11:00", "12:00"] } },
+  });
+
   // Renter profiles for two of the tenants (Abena has none, to show the empty state).
   const firstOfMonthsAhead = (n: number) => {
     const d = new Date();

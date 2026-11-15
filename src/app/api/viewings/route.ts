@@ -1,5 +1,6 @@
 import { after } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { slotProblem } from "@/lib/viewing-slots";
 import { fail, guard, ok, readJson, validationFailed } from "@/lib/api";
 import { notifyViewingRequested } from "@/lib/notifications";
 import { viewingRequestSchema } from "@/lib/validations";
@@ -51,6 +52,9 @@ export async function POST(req: Request) {
   if (duplicate) {
     return fail("You already have a pending viewing request for this property.", 409);
   }
+
+  const problem = await slotProblem(propertyId, preferredDate, preferredTime);
+  if (problem) return fail(problem, 422, { preferredTime: problem });
 
   const viewing = await prisma.viewingRequest.create({
     data: {
