@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { BadgeCheck, Eye, EyeOff, Loader2, Star, StarOff, Trash2 } from "lucide-react";
+import { BadgeCheck, CircleCheck, CircleX, Eye, EyeOff, Loader2, Star, StarOff, Trash2 } from "lucide-react";
 import { useToast } from "../ui/Toast";
 import { ConfirmButton } from "../ui/ConfirmButton";
 import { cn } from "@/lib/utils";
@@ -99,6 +99,34 @@ export function AdminListingActions({ id, title, isHidden, isFeatured }: { id: s
       >
         <Trash2 className="h-4 w-4" /> Delete
       </ConfirmButton>
+    </div>
+  );
+}
+
+/** Closes every open report on a listing: "Resolved" once you've acted (e.g. hidden it), "Dismiss" if nothing's wrong. */
+export function ReportDecision({ propertyId, title, count }: { propertyId: string; title: string; count: number }) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [busy, setBusy] = useState<"RESOLVED" | "DISMISSED" | null>(null);
+
+  async function decide(status: "RESOLVED" | "DISMISSED") {
+    setBusy(status);
+    const { ok, data } = await send(`/api/admin/properties/${propertyId}/reports`, "PATCH", { status });
+    setBusy(null);
+    if (!ok) return toast({ title: "Couldn't update reports", description: data.error ?? "Please try again.", variant: "error" });
+    toast({ title: status === "RESOLVED" ? "Marked as resolved" : "Reports dismissed", description: title, variant: "info" });
+    router.refresh();
+  }
+
+  const reports = count === 1 ? "report" : "reports";
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      <button onClick={() => decide("RESOLVED")} disabled={busy !== null} className="btn btn-sm btn-ghost text-forest-800" title={`Close the ${reports}: you've dealt with the problem`}>
+        {busy === "RESOLVED" ? <Loader2 className="h-4 w-4 animate-spin" /> : <CircleCheck className="h-4 w-4" />} Resolved
+      </button>
+      <button onClick={() => decide("DISMISSED")} disabled={busy !== null} className="btn btn-sm btn-ghost" title={`Close the ${reports}: nothing wrong with the listing`}>
+        {busy === "DISMISSED" ? <Loader2 className="h-4 w-4 animate-spin" /> : <CircleX className="h-4 w-4" />} Dismiss
+      </button>
     </div>
   );
 }

@@ -92,7 +92,7 @@ Every push to `main` then redeploys automatically.
 efie-homes/
 ├── prisma/
 │   ├── schema.prisma          # User, Property, ViewingRequest, SavedProperty
-│   ├── seed.ts                # 8 users, 19 properties (Accra, Tema, Kumasi, Takoradi), viewings, reviews, wishlists
+│   ├── seed.ts                # 8 users, 19 properties (Accra, Tema, Kumasi, Takoradi), viewings, reviews, reports, wishlists
 │   └── migrations/
 ├── src/
 │   ├── proxy.ts               # (Next 16 "proxy", formerly middleware) Protects /dashboard/*, role routing, bounces signed-in users from /login
@@ -159,6 +159,8 @@ All endpoints take and return JSON. Validation failures return `422` with `{ err
 | `POST /api/reviews` | Tenant | `{ viewingRequestId, landlordRating: 1-5, accuracyRating: 1-5, comment? }` — confirmed viewings dated today or earlier, once each |
 | `PATCH /api/reviews/:id` | Author / reviewed landlord / Admin | Author: `{ landlordRating?, accuracyRating?, comment? }`; landlord: `{ landlordReply }`; admin: `{ isHidden }` |
 | `DELETE /api/reviews/:id` | Author/Admin | |
+| `POST /api/reports` | Any signed-in user except the owner | `{ propertyId, reason: "SCAM" \| "NOT_AVAILABLE" \| "WRONG_DETAILS" \| "DUPLICATE" \| "OFFENSIVE" \| "OTHER", details? }` (details required for OTHER); one open report per person per listing, 10 per day |
+| `PATCH /api/admin/properties/:id/reports` | Admin | `{ status: "RESOLVED" \| "DISMISSED", adminNote? }` closes every open report on the listing |
 | `PATCH /api/profile` | Any | `{ name, phone?, avatarUrl?, currentPassword?, newPassword? }` |
 | `PATCH /api/admin/users/:id` | Admin | `{ isVerified }` (landlord/agent accounts only) |
 | `PATCH /api/admin/properties/:id` | Admin | `{ isHidden?, isFeatured? }` (hiding also unfeatures) |
@@ -246,6 +248,13 @@ Known limitation: resetting a password doesn't sign out sessions that are alread
 - Listing pages show the landlord's rating and how accurate *that* listing was rated.
 - Admins can hide abusive reviews from the admin view of the landlord dashboard or the profile page; hidden reviews don't count towards averages.
 - The review keeps a copy of the listing title, so it survives the listing being deleted.
+
+## Reporting listings
+
+- Any signed-in user can report a listing (not their own) from the link under the landlord card: looks like a scam, no longer available, wrong details, duplicate, offensive, or something else (with details). The form also reminds renters never to pay before seeing a home.
+- Every admin gets an email, and the listing appears in **Reported listings** at the top of the admin dashboard, most-reported first, with each reason, note and reporter.
+- Admins hide the listing if needed and mark the reports **Resolved**, or **Dismiss** them. Landlords never see who reported them. After a report is closed, the same person can report the listing again.
+- Listings aren't hidden automatically, so a rival can't take a listing down just by reporting it.
 
 ## Search engines & sharing
 

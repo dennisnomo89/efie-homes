@@ -292,3 +292,39 @@ export function reviewReceivedEmail(p: {
     ].join("\n"),
   };
 }
+
+export function listingReportedEmail(p: {
+  adminName: string;
+  propertyTitle: string;
+  landlordName: string;
+  reasonLabel: string;
+  details: string | null;
+  openReports: number;
+  adminUrl: string;
+}): Rendered {
+  const subject = `Listing reported: ${p.reasonLabel} — ${p.propertyTitle}`;
+  const rows: [string, string][] = [
+    ["Listing", p.propertyTitle],
+    ["Landlord", p.landlordName],
+    ["Reason", p.reasonLabel],
+    ["Open reports on this listing", String(p.openReports)],
+  ];
+  return {
+    subject,
+    html: layout({
+      preheader: `${p.propertyTitle} was reported (${p.reasonLabel}).`,
+      heading: "A listing was reported",
+      body: `Hi ${escapeHtml(firstName(p.adminName))},<br>Someone reported a listing.${detailRows(rows)}${p.details ? `What they said:${quote(p.details)}` : ""}Check it and hide it if needed.`,
+      cta: { label: "Open the reports queue", url: p.adminUrl },
+    }),
+    text: [
+      `Hi ${firstName(p.adminName)},`,
+      ``,
+      `Someone reported a listing.`,
+      ...rows.map(([k, v]) => `${k}: ${v}`),
+      ...(p.details ? ["", "What they said:", p.details] : []),
+      ``,
+      `Open the reports queue: ${p.adminUrl}`,
+    ].join("\n"),
+  };
+}

@@ -42,6 +42,7 @@ model User {
   savedSearches       SavedSearch[]
   reviewsWritten      Review[]             @relation("ReviewAuthor")
   reviewsReceived     Review[]             @relation("ReviewLandlord")
+  listingReports      ListingReport[]
 }
 
 model Property {
@@ -88,6 +89,7 @@ model Property {
   viewingRequests ViewingRequest[]
   savedBy         SavedProperty[]
   reviews         Review[]
+  reports         ListingReport[]
 
   @@index([region])
   @@index([neighborhood])
@@ -221,4 +223,27 @@ model Review {
 
   @@index([landlordId, isHidden])
   @@index([propertyId])
+}
+
+/// A user flags a listing (scam, already rented, wrong details…) for admins to check.
+model ListingReport {
+  id         String    @id @default(cuid())
+  /// SCAM | NOT_AVAILABLE | WRONG_DETAILS | DUPLICATE | OFFENSIVE | OTHER
+  reason     String
+  details    String?
+  /// OPEN | RESOLVED (action taken) | DISMISSED (no problem found)
+  status     String    @default("OPEN")
+  adminNote  String?
+  resolvedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  reporterId String
+  reporter   User     @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  /// One report per person per listing; reporting again after it was closed reopens it.
+  @@unique([propertyId, reporterId])
+  @@index([status, createdAt])
 }

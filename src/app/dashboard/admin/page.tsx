@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BadgeCheck, Building2, EyeOff, Inbox, MapPin, Search, ShieldCheck, Users } from "lucide-react";
-import { AdminListingActions, DemoCleanup, VerifyToggle } from "@/components/admin/AdminControls";
+import { BadgeCheck, Building2, EyeOff, Flag, Inbox, MapPin, Search, ShieldCheck, Users } from "lucide-react";
+import { AdminListingActions, DemoCleanup, ReportDecision, VerifyToggle } from "@/components/admin/AdminControls";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SafeImage } from "@/components/ui/SafeImage";
 import { requireUser } from "@/lib/auth";
-import { DEMO_EMAIL_DOMAIN, propertyTypeLabel } from "@/lib/constants";
+import { DEMO_EMAIL_DOMAIN, propertyTypeLabel, reportReasonLabel } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
 import { cn, formatCedis, formatDate, parseJsonArray } from "@/lib/utils";
@@ -43,7 +43,7 @@ export default async function AdminDashboard({ searchParams }: Props) {
   };
   const demoWhere = { email: { endsWith: DEMO_EMAIL_DOMAIN }, id: { not: admin.id } };
 
-  const [tenants, landlords, live, hidden, pendingViewings, demo, landlordRows, listings, listingTotal] = await Promise.all([
+  const [tenants, landlords, live, hidden, pendingViewings, demo, landlordRows, listings, listingTotal, reported] = await Promise.all([
     prisma.user.count({ where: { role: "TENANT" } }),
     prisma.user.groupBy({ by: ["isVerified"], where: { role: "LANDLORD" }, _count: { _all: true } }),
     prisma.property.count({ where: { isHidden: false, status: "AVAILABLE" } }),
@@ -67,7 +67,29 @@ export default async function AdminDashboard({ searchParams }: Props) {
       include: { landlord: { select: { name: true, isVerified: true } }, _count: { select: { viewingRequests: true } } },
     }),
     prisma.property.count({ where: listingWhere }),
+    // Listings with open reports.
+    prisma.property.findMany({
+      where: { reports: { some: { status: "OPEN" } } },
+      take: 50,
+      select: {
+        id: true,
+        title: true,
+        images: true,
+        neighborhood: true,
+        isHidden: true,
+        isFeatured: true,
+        landlord: { select: { name: true, isVerified: true } },
+        reports: {
+          where: { status: "OPEN" },
+          orderBy: { createdAt: "desc" },
+          select: { id: true, reason: true, details: true, createdAt: true, reporter: { select: { name: true, email: true } } },
+        },
+      },
+    }),
   ]);
+  // Most-reported first, then the most recently reported.
+  const reportQueue = reported.sort((a, b) => b.reports.length - a.reports.length || +b.reports[0].createdAt - +a.reports[0].createdAt);
+  const openReports = reportQueue.reduce((n, p) => n + p.reports.length, 0);
 
   const verified = landlords.find((l) => l.isVerified)?._count._all ?? 0;
   const unverified = landlords.find((l) => !l.isVerified)?._count._all ?? 0;
@@ -94,6 +116,68 @@ export default async function AdminDashboard({ searchParams }: Props) {
       </div>
 
       {demoAccounts > 0 && <DemoCleanup accounts={demoAccounts} listings={demoListings} viewings={demoViewings} />}
+
+      {/* ---------- Reports ---------- */}
+      <section id="reports" className="scroll-mt-24">
+        <h2 className="flex items-center gap-2 text-xl font-semibold">
+          Reported listings
+          {openReports > 0 && <span className="badge bg-terracotta-600 text-white">{openReports} open</span>}
+        </h2>
+        <p className="text-sm text-stone-600">
+          Check each report. Hide the listing if there&rsquo;s a real problem, then mark it <strong>Resolved</strong>; <strong>Dismiss</strong> it if
+          nothing&rsquo;s wrong. Landlords never see who reported them.
+        </p>
+        {reportQueue.length === 0 ? (
+          <div className="mt-5">
+            <EmptyState icon={Flag} title="No open reports" description="When someone reports a listing, it shows up here and every admin gets an email." />
+          </div>
+        ) : (
+          <ul className="mt-5 space-y-3">
+            {reportQueue.map((p) => (
+              <li key={p.id} className={cn("card p-4", p.isHidden && "border-terracotta-200 bg-terracotta-50/40")}>
+                <div className="flex flex-col gap-4 md:flex-row md:items-center">
+                  <SafeImage src={parseJsonArray(p.images)[0]} alt="" sizes="(min-width: 768px) 112px, 100vw" className="aspect-[4/3] w-full shrink-0 rounded-xl object-cover md:h-20 md:w-28" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="badge bg-terracotta-100 text-terracotta-700">
+                        <Flag className="h-3.5 w-3.5" /> {p.reports.length} {p.reports.length === 1 ? "report" : "reports"}
+                      </span>
+                      {p.isHidden && (
+                        <span className="badge bg-stone-100 text-stone-700">
+                          <EyeOff className="h-3.5 w-3.5" /> Hidden
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1 line-clamp-1 font-semibold">{p.title}</p>
+                    <p className="flex items-center gap-1 text-sm text-stone-600">
+                      <MapPin className="h-3.5 w-3.5" /> {p.neighborhood} · by {p.landlord.name}
+                      {p.landlord.isVerified && <BadgeCheck className="h-3.5 w-3.5 text-forest-600" aria-label="Verified" />}
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-1.5 md:items-end">
+                    <AdminListingActions id={p.id} title={p.title} isHidden={p.isHidden} isFeatured={p.isFeatured} />
+                    <ReportDecision propertyId={p.id} title={p.title} count={p.reports.length} />
+                  </div>
+                </div>
+                <ul className="mt-3 space-y-2 border-t border-stone-100 pt-3">
+                  {p.reports.map((r) => (
+                    <li key={r.id} className="text-sm">
+                      <p>
+                        <strong className="font-semibold">{reportReasonLabel(r.reason)}</strong>
+                        <span className="text-stone-500">
+                          {" "}
+                          · {r.reporter.name} ({r.reporter.email}) · {formatDate(r.createdAt)}
+                        </span>
+                      </p>
+                      {r.details && <p className="mt-0.5 whitespace-pre-line text-stone-700">{r.details}</p>}
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       {/* ---------- Landlords ---------- */}
       <section id="landlords" className="scroll-mt-24">

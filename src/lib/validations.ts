@@ -7,6 +7,7 @@ import {
   GHANA_BOUNDS,
   REGIONS,
   VIEWING_TIME_SLOTS,
+  REPORT_REASON_VALUES,
 } from "./constants";
 import { normalizePhone } from "./utils";
 
@@ -253,3 +254,24 @@ export const reviewReplySchema = z.object({
   landlordReply: z.string().trim().min(1, "Write a reply").max(REVIEW_TEXT_MAX, `Keep it under ${REVIEW_TEXT_MAX.toLocaleString()} characters`),
 });
 export const reviewModerationSchema = z.object({ isHidden: z.boolean() });
+
+export const REPORT_DETAILS_MAX = 1000;
+
+export const listingReportSchema = z
+  .object({
+    propertyId: z.string().min(1),
+    reason: z.enum(REPORT_REASON_VALUES, { error: "Choose a reason" }),
+    details: z
+      .string()
+      .trim()
+      .max(REPORT_DETAILS_MAX, `Keep it under ${REPORT_DETAILS_MAX.toLocaleString()} characters`)
+      .nullish()
+      .transform((v) => (v ? v : null)),
+  })
+  .refine((v) => v.reason !== "OTHER" || v.details, { message: "Tell us what's wrong", path: ["details"] });
+
+/** Admin closes every open report on a listing at once: RESOLVED (action taken) or DISMISSED (nothing wrong). */
+export const reportDecisionSchema = z.object({
+  status: z.enum(["RESOLVED", "DISMISSED"], { error: "Choose an outcome" }),
+  adminNote: z.string().trim().max(500).optional(),
+});

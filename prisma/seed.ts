@@ -510,6 +510,7 @@ async function main() {
     process.exit(1);
   }
 
+  await prisma.listingReport.deleteMany();
   await prisma.review.deleteMany();
   await prisma.savedProperty.deleteMany();
   await prisma.viewingRequest.deleteMany();
@@ -715,7 +716,29 @@ async function main() {
     });
   }
 
-  console.log(`✅ Seeded ${await prisma.user.count()} users, ${created.length} properties, ${await prisma.review.count()} reviews.`);
+  // Open reports, so the admin queue has something in it.
+  await prisma.listingReport.createMany({
+    data: [
+      {
+        propertyId: byTitle("Bantama").id,
+        reporterId: abena.id,
+        reason: "NOT_AVAILABLE",
+        details: "I called the number and was told the room was rented last month.",
+        createdAt: daysFromNow(-2),
+      },
+      {
+        propertyId: byTitle("Trasacco").id,
+        reporterId: kofi.id,
+        reason: "SCAM",
+        details: "Someone claiming to be the agent asked me to send a GHS 500 viewing fee by MoMo before showing me the house.",
+        createdAt: daysFromNow(-1),
+      },
+    ],
+  });
+
+  console.log(
+    `✅ Seeded ${await prisma.user.count()} users, ${created.length} properties, ${await prisma.review.count()} reviews, ${await prisma.listingReport.count()} reports.`,
+  );
   console.log("   All accounts use the password: Password123");
 }
 

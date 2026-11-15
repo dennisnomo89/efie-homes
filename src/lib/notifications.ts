@@ -1,7 +1,7 @@
 import { prisma } from "./prisma";
 import { appUrl, sendEmail } from "./email";
-import { newMessageEmail, reviewReceivedEmail, savedSearchAlertEmail, viewingAnsweredEmail, viewingCancelledEmail, viewingRequestedEmail } from "./email-templates";
-import { propertyTypeLabel } from "./constants";
+import { listingReportedEmail, newMessageEmail, reviewReceivedEmail, savedSearchAlertEmail, viewingAnsweredEmail, viewingCancelledEmail, viewingRequestedEmail } from "./email-templates";
+import { propertyTypeLabel, reportReasonLabel } from "./constants";
 import { ALERT_THROTTLE_MS, filtersFromQuery, listingMatches, unsubscribeToken } from "./saved-searches";
 import { parseJsonArray } from "./utils";
 
@@ -205,5 +205,34 @@ export async function notifyReviewReceived(reviewId: string) {
     await sendEmail({ to: r.landlord.email, ...email });
   } catch (err) {
     console.error("[notify] review received:", err instanceof Error ? err.message : err);
+  }
+}
+
+/** Tells every admin that a listing was reported. */
+export async function notifyListingReported(reportId: string) {
+  try {
+    const r = await prisma.listingReport.findUnique({
+      where: { id: reportId },
+      include: { property: { select: { id: true, title: true, landlord: { select: { name: true } } } } },
+    });
+    if (!r) return;
+    const [admins, openReports] = await Promise.all([
+      prisma.user.findMany({ where: { role: "ADMIN" }, select: { name: true, email: true } }),
+      prisma.listingReport.count({ where: { propertyId: r.propertyId, status: "OPEN" } }),
+    ]);
+    for (const admin of admins) {
+      const email = listingReportedEmail({
+        adminName: admin.name,
+        propertyTitle: r.property.title,
+        landlordName: r.property.landlord.name,
+        reasonLabel: reportReasonLabel(r.reason),
+        details: r.details,
+        openReports,
+        adminUrl: `${appUrl()}/dashboard/admin#reports`,
+      });
+      await sendEmail({ to: admin.email, ...email });
+    }
+  } catch (err) {
+    console.error("[notify] listing reported:", err instanceof Error ? err.message : err);
   }
 }

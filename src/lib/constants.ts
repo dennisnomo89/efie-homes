@@ -183,3 +183,20 @@ export const REGION_CENTERS: Partial<Record<string, [number, number]>> = {
   Northern: [9.403, -0.843],
   Volta: [6.601, 0.47],
 };
+
+/** Why someone reports a listing. "hint" is shown under the option in the report form. */
+export const REPORT_REASONS = [
+  { value: "SCAM", label: "Looks like a scam", hint: "Asked for money before a viewing, fake photos, or the \"landlord\" isn't the owner" },
+  { value: "NOT_AVAILABLE", label: "No longer available", hint: "Already rented, or the landlord says it isn't for rent" },
+  { value: "WRONG_DETAILS", label: "Wrong details", hint: "Price, advance, photos or location don't match" },
+  { value: "DUPLICATE", label: "Duplicate listing", hint: "The same home is listed more than once" },
+  { value: "OFFENSIVE", label: "Offensive or inappropriate", hint: "Discriminatory, abusive or unrelated content" },
+  { value: "OTHER", label: "Something else", hint: "Tell us what's wrong" },
+] as const;
+export type ReportReason = (typeof REPORT_REASONS)[number]["value"];
+export const REPORT_REASON_VALUES = REPORT_REASONS.map((r) => r.value) as [ReportReason, ...ReportReason[]];
+export const REPORT_STATUSES = ["OPEN", "RESOLVED", "DISMISSED"] as const;
+
+export function reportReasonLabel(value: string): string {
+  return REPORT_REASONS.find((r) => r.value === value)?.label ?? value;
+}

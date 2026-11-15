@@ -23,6 +23,8 @@ export const LIMITS = {
   forgotIp: (ip: string): Limit => ({ key: `forgot:ip:${ip}`, max: 10, windowMs: 60 * MINUTE }),
   /** Password reset submissions from one network address. */
   resetIp: (ip: string): Limit => ({ key: `reset:ip:${ip}`, max: 20, windowMs: 15 * MINUTE }),
+  /** Listing reports from one account. */
+  reportUser: (userId: string): Limit => ({ key: `report:user:${userId}`, max: 10, windowMs: 24 * 60 * MINUTE }),
 };
 
 /** Has this key reached its limit? Does not record anything. */

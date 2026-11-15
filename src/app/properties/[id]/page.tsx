@@ -21,6 +21,7 @@ import { FavoriteButton } from "@/components/FavoriteButton";
 import { ImageGallery } from "@/components/ImageGallery";
 import { AreaMapLoader } from "@/components/map/MapLoaders";
 import { PropertyCard } from "@/components/PropertyCard";
+import { ReportListingButton } from "@/components/ReportListingButton";
 import { ScheduleViewingModal } from "@/components/ScheduleViewingModal";
 import { ShareButton } from "@/components/ShareButton";
 import { getCurrentUser } from "@/lib/auth";
@@ -72,7 +73,7 @@ export default async function PropertyDetailPage({ params }: Props) {
   if (!canManage) await prisma.property.update({ where: { id }, data: { views: { increment: 1 } } });
 
   const property = toView(raw);
-  const [savedIds, similarRaw, pendingRequest, landlordRating, accuracy] = await Promise.all([
+  const [savedIds, similarRaw, pendingRequest, landlordRating, accuracy, myReport] = await Promise.all([
     getSavedIds(user?.id),
     prisma.property.findMany({
       where: { id: { not: id }, status: "AVAILABLE", isHidden: false, OR: [{ neighborhood: property.neighborhood }, { region: property.region }] },
@@ -85,6 +86,9 @@ export default async function PropertyDetailPage({ params }: Props) {
       : Promise.resolve(null),
     landlordRatingSummary(raw.landlordId),
     listingAccuracy(id),
+    user && !canManage
+      ? prisma.listingReport.findFirst({ where: { propertyId: id, reporterId: user.id, status: "OPEN" }, select: { createdAt: true } })
+      : Promise.resolve(null),
   ]);
   const similar = similarRaw.map(toView);
   const rented = property.status === "RENTED";
@@ -282,6 +286,10 @@ export default async function PropertyDetailPage({ params }: Props) {
                 </Link>
               </div>
             </div>
+
+            {!canManage && (
+              <ReportListingButton propertyId={property.id} propertyTitle={property.title} signedIn={Boolean(user)} reportedAt={myReport?.createdAt ?? null} />
+            )}
           </div>
         </aside>
       </div>
