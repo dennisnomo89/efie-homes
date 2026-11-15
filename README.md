@@ -378,3 +378,4 @@ Tests use [Vitest](https://vitest.dev) and live in `tests/`.
 - Samuel Batu
 - Seth Quaye
 - Fred Wusornu
+- [Yaga-hub](https://github.com/Yaga-hub)
