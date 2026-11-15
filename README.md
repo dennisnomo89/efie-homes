@@ -360,3 +360,9 @@ Tests use [Vitest](https://vitest.dev) and live in `tests/`.
 - On the login page, demo account hints appear only outside production (`NODE_ENV !== "production"`).
 - **Prisma 7 specifics:** connection settings for the CLI live in `prisma.config.ts` (it loads `.env` via `dotenv`); the app connects through `@prisma/adapter-pg` in `src/lib/prisma.ts`. The client is generated into `src/generated/prisma` (git-ignored; `npm install` regenerates it). `prisma migrate dev`/`reset` no longer seed or generate on their own; the `db:migrate` and `db:reset` scripts do it for you.
 - `npm audit` reports no known vulnerabilities as of the Next 16 / Prisma 7 upgrade. An npm `overrides` entry pins Zod for `@vercel/blob`'s dependencies to the patched version.
+
+## Contributors
+
+- Samuel Batu
+- Seth Quaye
+- Fred Wusornu
