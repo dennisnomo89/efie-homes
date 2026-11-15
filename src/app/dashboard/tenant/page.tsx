@@ -6,6 +6,7 @@ import { MessageThread } from "@/components/dashboard/MessageThread";
 import { SavedSearchActions } from "@/components/dashboard/SavedSearchActions";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
+import { WishlistAlertsToggle } from "@/components/dashboard/WishlistAlertsToggle";
 import { PropertyCard } from "@/components/PropertyCard";
 import { ReviewForm } from "@/components/reviews/ReviewActions";
 import { Stars } from "@/components/reviews/Stars";
@@ -59,10 +60,11 @@ export default async function TenantDashboard({ searchParams }: Props) {
 
   const count = (s: string) => viewings.filter((v) => v.status === s).length;
   const viewingIds = viewings.map((v) => v.id);
-  const [unread, totals, searches] = await Promise.all([
+  const [unread, totals, searches, prefs] = await Promise.all([
     unreadCounts(user.id, viewingIds),
     messageTotals(viewingIds),
     savedSearchesWithCounts(user.id),
+    prisma.user.findUnique({ where: { id: user.id }, select: { wishlistAlerts: true } }),
   ]);
 
   return (
@@ -200,8 +202,15 @@ export default async function TenantDashboard({ searchParams }: Props) {
       </section>
 
       <section id="saved" className="scroll-mt-24">
-        <h2 className="text-xl font-semibold">Saved homes</h2>
-        <p className="text-sm text-stone-600">Your wishlist — tap the heart to remove a home.</p>
+        <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
+          <div>
+            <h2 className="text-xl font-semibold">Saved homes</h2>
+            <p className="text-sm text-stone-600">
+              Your wishlist — tap the heart to remove a home. We email you when a saved home drops in price or is available again.
+            </p>
+          </div>
+          {user.role === "TENANT" && <WishlistAlertsToggle enabled={prefs?.wishlistAlerts ?? true} />}
+        </div>
         {saved.length === 0 ? (
           <div className="mt-5">
             <EmptyState

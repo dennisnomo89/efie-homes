@@ -1,9 +1,10 @@
 import { prisma } from "./prisma";
 import { appUrl, sendEmail } from "./email";
-import { listingReportedEmail, newMessageEmail, reviewReceivedEmail, savedSearchAlertEmail, viewingAnsweredEmail, viewingCancelledEmail, viewingRequestedEmail } from "./email-templates";
+import { listingReportedEmail, newMessageEmail, wishlistUpdateEmail, reviewReceivedEmail, savedSearchAlertEmail, viewingAnsweredEmail, viewingCancelledEmail, viewingRequestedEmail } from "./email-templates";
 import { propertyTypeLabel, reportReasonLabel } from "./constants";
 import { ALERT_THROTTLE_MS, filtersFromQuery, listingMatches, unsubscribeToken } from "./saved-searches";
 import { parseJsonArray } from "./utils";
+import { WISHLIST_ALERT_THROTTLE_MS, wishlistUnsubscribeToken } from "./wishlist-alerts";
 
 /* Each function loads what it needs and sends one email. They never throw (sendEmail swallows errors),
  * so they are safe to run with next/server's after() once the response has been sent. */
@@ -234,5 +235,59 @@ export async function notifyListingReported(reportId: string) {
     }
   } catch (err) {
     console.error("[notify] listing reported:", err instanceof Error ? err.message : err);
+  }
+}
+
+export type WishlistChange = { kind: "price"; from: number; to: number } | { kind: "available" };
+
+/**
+ * Emails tenants who saved a home when its rent drops or it's available again
+ * (wishlist alerts on, at most one email per saved home per WISHLIST_ALERT_THROTTLE_MS). Returns how many were sent.
+ */
+export async function notifyWishlistChange(propertyId: string, change: WishlistChange): Promise<number> {
+  try {
+    const p = await prisma.property.findUnique({ where: { id: propertyId } });
+    if (!p || p.isHidden || p.status !== "AVAILABLE") return 0;
+
+    const saves = await prisma.savedProperty.findMany({
+      where: { propertyId, user: { wishlistAlerts: true, id: { not: p.landlordId } } },
+      include: { user: { select: { id: true, name: true, email: true } } },
+    });
+    let sent = 0;
+    for (const s of saves) {
+      // Claim the slot atomically so quick successive edits can't send several emails.
+      const cutoff = new Date(Date.now() - WISHLIST_ALERT_THROTTLE_MS);
+      const { count } = await prisma.savedProperty.updateMany({
+        where: { id: s.id, OR: [{ lastAlertAt: null }, { lastAlertAt: { lt: cutoff } }] },
+        data: { lastAlertAt: new Date() },
+      });
+      if (count === 0) continue;
+
+      const unsubscribeUrl = `${appUrl()}/api/wishlist-alerts/unsubscribe?u=${s.user.id}&token=${wishlistUnsubscribeToken(s.user.id)}`;
+      const email = wishlistUpdateEmail({
+        name: s.user.name,
+        change,
+        listing: {
+          title: p.title,
+          monthlyRent: p.monthlyRent,
+          neighborhood: p.neighborhood,
+          region: p.region,
+          image: parseJsonArray(p.images)[0] ?? null,
+          url: `${appUrl()}/properties/${p.id}`,
+        },
+        wishlistUrl: `${appUrl()}/dashboard/tenant#saved`,
+        unsubscribeUrl,
+      });
+      const result = await sendEmail({
+        to: s.user.email,
+        ...email,
+        headers: { "List-Unsubscribe": `<${unsubscribeUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
+      });
+      if (result.ok) sent++;
+    }
+    return sent;
+  } catch (err) {
+    console.error("[notify] wishlist change:", err instanceof Error ? err.message : err);
+    return 0;
   }
 }

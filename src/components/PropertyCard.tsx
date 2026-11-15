@@ -4,6 +4,7 @@ import { FavoriteButton } from "./FavoriteButton";
 import { CompareButton } from "./compare/CompareControls";
 import { SafeImage } from "./ui/SafeImage";
 import { advanceLabel, amenityLabel, propertyTypeLabel } from "@/lib/constants";
+import { priceDrop } from "@/lib/price-drop";
 import type { PropertyView } from "@/lib/properties";
 import { formatCedis } from "@/lib/utils";
 
@@ -20,6 +21,7 @@ const HIGHLIGHT_AMENITIES = ["BOREHOLE_POLYTANK", "WALLED_GATED", "GENERATOR_SOL
 export function PropertyCard({ property, saved = false, favoriteMode = "unauth", priority = false }: Props) {
   const highlights = property.amenities.filter((a) => HIGHLIGHT_AMENITIES.includes(a)).slice(0, 2);
   const rented = property.status === "RENTED";
+  const drop = rented ? null : priceDrop(property);
 
   return (
     <Link
@@ -38,6 +40,7 @@ export function PropertyCard({ property, saved = false, favoriteMode = "unauth",
           <div className="flex flex-wrap gap-1.5">
             <span className="badge bg-white/95 text-ink shadow-sm">{propertyTypeLabel(property.propertyType)}</span>
             {property.isFeatured && !rented && <span className="badge bg-gold-400 text-ink shadow-sm">Featured</span>}
+            {drop && <span className="badge bg-terracotta-600 text-white shadow-sm">Price dropped {drop.percent}%</span>}
             {rented && <span className="badge bg-ink text-white">Rented</span>}
           </div>
           <FavoriteButton propertyId={property.id} initialSaved={saved} mode={favoriteMode} />
@@ -52,6 +55,12 @@ export function PropertyCard({ property, saved = false, favoriteMode = "unauth",
         <p className="font-display text-xl font-semibold text-forest-800">
           {formatCedis(property.monthlyRent)}
           <span className="font-sans text-sm font-normal text-stone-500"> / month</span>
+          {drop && (
+            <span className="ml-2 font-sans text-sm font-normal text-stone-500">
+              <span className="sr-only">was </span>
+              <s>{formatCedis(drop.from)}</s>
+            </span>
+          )}
         </p>
         <h3 className="mt-1.5 line-clamp-2 font-semibold leading-snug text-ink group-hover:text-forest-800">{property.title}</h3>
         <p className="mt-1.5 flex items-center gap-1.5 text-sm text-stone-600">

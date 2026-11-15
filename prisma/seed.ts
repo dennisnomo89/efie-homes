@@ -557,6 +557,13 @@ async function main() {
     return found;
   };
 
+  // A recent rent cut on a home Ama saved, so the "Price dropped" badge shows in the demo.
+  const labone = byTitle("Labone");
+  await prisma.property.update({
+    where: { id: labone.id },
+    data: { previousRent: Math.round((labone.monthlyRent * 1.15) / 100) * 100, rentReducedAt: daysFromNow(-4) },
+  });
+
   // Wishlists
   const saves: [string, string][] = [
     [ama.id, byTitle("East Legon").id],

@@ -249,6 +249,13 @@ Known limitation: resetting a password doesn't sign out sessions that are alread
 - Admins can hide abusive reviews from the admin view of the landlord dashboard or the profile page; hidden reviews don't count towards averages.
 - The review keeps a copy of the listing title, so it survives the listing being deleted.
 
+## Price drops & wishlist emails
+
+- When a landlord lowers the rent, the listing shows **"Price dropped N%"** with the old rent struck through for 30 days (`src/lib/price-drop.ts`). Several cuts in a row keep the original price as "was"; raising the rent back clears it.
+- Tenants who saved the home get an email when its rent drops, or when a rented home is marked available again: at most one email per saved home per day, never for hidden or rented listings.
+- Tenants switch these emails on or off from **Saved homes** on their dashboard, or with the signed one-click link in each email (also sent as `List-Unsubscribe` headers).
+- API: `PATCH /api/wishlist-alerts` `{ wishlistAlerts }` (tenants), `GET|POST /api/wishlist-alerts/unsubscribe?u=…&token=…`.
+
 ## Comparing homes
 
 - Every listing card and listing page has a **Compare** button. Up to 3 homes can be picked; a tray at the bottom of the screen shows how many are picked and opens the comparison.

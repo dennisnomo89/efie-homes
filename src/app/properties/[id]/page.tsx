@@ -28,6 +28,7 @@ import { ShareButton } from "@/components/ShareButton";
 import { getCurrentUser } from "@/lib/auth";
 import { AMENITIES, advanceLabel, propertyTypeLabel } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
+import { priceDrop } from "@/lib/price-drop";
 import { getSavedIds, landlordSelect, toView } from "@/lib/properties";
 import { landlordRatingSummary, listingAccuracy } from "@/lib/reviews";
 import { RatingSummaryLine } from "@/components/reviews/Stars";
@@ -93,6 +94,7 @@ export default async function PropertyDetailPage({ params }: Props) {
   ]);
   const similar = similarRaw.map(toView);
   const rented = property.status === "RENTED";
+  const drop = rented ? null : priceDrop(property);
   const isOwner = canManage;
   const favoriteMode = favoriteModeFor(user?.role);
 
@@ -206,6 +208,14 @@ export default async function PropertyDetailPage({ params }: Props) {
                 <div>
                   <p className="font-display text-3xl font-semibold text-forest-800">{formatCedis(property.monthlyRent)}</p>
                   <p className="text-sm text-stone-500">per month</p>
+                  {drop && (
+                    <p className="mt-1.5 inline-flex flex-wrap items-center gap-1.5 text-sm">
+                      <span className="badge bg-terracotta-600 text-white">Price dropped {drop.percent}%</span>
+                      <span className="text-stone-600">
+                        was <s>{formatCedis(drop.from)}</s> · reduced {formatDate(drop.since, { day: "numeric", month: "short" })}
+                      </span>
+                    </p>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   {!property.isHidden && (

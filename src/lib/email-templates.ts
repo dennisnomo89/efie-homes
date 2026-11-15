@@ -328,3 +328,55 @@ export function listingReportedEmail(p: {
     ].join("\n"),
   };
 }
+
+export function wishlistUpdateEmail(p: {
+  name: string;
+  change: { kind: "price"; from: number; to: number } | { kind: "available" };
+  listing: { title: string; monthlyRent: number; neighborhood: string; region: string; image: string | null; url: string };
+  wishlistUrl: string;
+  unsubscribeUrl: string;
+}): Rendered {
+  const l = p.listing;
+  const cedis = (n: number) => `₵ ${n.toLocaleString("en-GH")}`;
+  const price = `${cedis(l.monthlyRent)}/month`;
+  const isDrop = p.change.kind === "price";
+  const subject = isDrop ? `Price drop: ${l.title} is now ${price}` : `Available again: ${l.title}`;
+  const heading = isDrop ? "A home you saved is cheaper" : "A home you saved is available again";
+  const lead =
+    p.change.kind === "price"
+      ? `The rent for a home on your wishlist went down from ${cedis(p.change.from)} to <strong>${cedis(p.change.to)}</strong> a month.`
+      : "A home on your wishlist that was rented is back on the market.";
+  const leadText =
+    p.change.kind === "price"
+      ? `The rent for a home on your wishlist went down from ${cedis(p.change.from)} to ${cedis(p.change.to)} a month.`
+      : "A home on your wishlist that was rented is back on the market.";
+  const image = l.image
+    ? `<a href="${escapeHtml(l.url)}"><img src="${escapeHtml(l.image)}" alt="" width="504" style="width:100%;max-width:504px;border-radius:12px;display:block;margin:12px 0"></a>`
+    : "";
+  return {
+    subject,
+    html: layout({
+      preheader: isDrop ? `Now ${price} in ${l.neighborhood}.` : `${l.title} in ${l.neighborhood} is available again.`,
+      heading,
+      body: `Hi ${escapeHtml(firstName(p.name))},<br>${lead}${image}${detailRows([
+        ["Home", l.title],
+        ["Rent", price],
+        ["Area", `${l.neighborhood}, ${l.region}`],
+      ])}Good homes go quickly, so book a viewing soon if you're still interested.`,
+      cta: { label: "View this home", url: l.url },
+      footer: `You're getting this because this home is on your <a href="${escapeHtml(p.wishlistUrl)}" style="color:#78716c">Efie Homes wishlist</a>. <a href="${escapeHtml(p.unsubscribeUrl)}" style="color:#78716c">Stop wishlist emails</a>.`,
+    }),
+    text: [
+      `Hi ${firstName(p.name)},`,
+      ``,
+      leadText,
+      ``,
+      `${l.title}`,
+      `${price} · ${l.neighborhood}, ${l.region}`,
+      l.url,
+      ``,
+      `Your wishlist: ${p.wishlistUrl}`,
+      `Stop wishlist emails: ${p.unsubscribeUrl}`,
+    ].join("\n"),
+  };
+}

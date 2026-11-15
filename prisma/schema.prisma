@@ -31,6 +31,8 @@ model User {
   /// Bumped to sign the user out everywhere (password change/reset, "sign out everywhere")
   sessionVersion Int      @default(0)
   avatarUrl      String?
+  /// Email me when a home on my wishlist drops in price or is available again
+  wishlistAlerts Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -46,7 +48,7 @@ model User {
 }
 
 model Property {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   title           String
   description     String
   /// CHAMBER_HALL | SINGLE_ROOM_SC | APARTMENT_1BR | APARTMENT_2BR | APARTMENT_3BR | APARTMENT_4BR | DETACHED | TOWNHOUSE | EXECUTIVE_MANSION
@@ -62,27 +64,30 @@ model Property {
   /// Monthly rent in whole Ghana Cedis
   monthlyRent     Int
   /// Minimum advance the landlord requires, in months (6, 12 or 24)
-  advanceMonths   Int      @default(12)
+  advanceMonths   Int       @default(12)
   /// Refundable security deposit in Ghana Cedis
-  securityDeposit Int      @default(0)
+  securityDeposit Int       @default(0)
   /// Agent commission as a percentage of the advance (0 when listed directly by landlord)
-  agentFeePercent Int      @default(0)
-  bedrooms        Int      @default(1)
-  bathrooms       Int      @default(1)
+  agentFeePercent Int       @default(0)
+  bedrooms        Int       @default(1)
+  bathrooms       Int       @default(1)
   sizeSqm         Int?
-  furnished       Boolean  @default(false)
+  furnished       Boolean   @default(false)
   /// JSON array of image URLs
-  images          String   @default("[]")
+  images          String    @default("[]")
   /// JSON array of amenity keys (see src/lib/constants.ts)
-  amenities       String   @default("[]")
+  amenities       String    @default("[]")
   /// AVAILABLE | RENTED
-  status          String   @default("AVAILABLE")
-  isFeatured      Boolean  @default(false)
+  status          String    @default("AVAILABLE")
+  isFeatured      Boolean   @default(false)
   /// Hidden by an admin: not shown publicly, still visible to the owner and admins
-  isHidden        Boolean  @default(false)
-  views           Int      @default(0)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  isHidden        Boolean   @default(false)
+  views           Int       @default(0)
+  /// Rent before the latest reduction (shown struck through for a while after rentReducedAt)
+  previousRent    Int?
+  rentReducedAt   DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   landlordId      String
   landlord        User             @relation(fields: [landlordId], references: [id], onDelete: Cascade)
@@ -155,8 +160,10 @@ model PasswordResetToken {
 }
 
 model SavedProperty {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
+  id          String    @id @default(cuid())
+  createdAt   DateTime  @default(now())
+  /// Last price-drop / back-on-the-market email for this saved home (alerts are throttled)
+  lastAlertAt DateTime?
 
   userId     String
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
