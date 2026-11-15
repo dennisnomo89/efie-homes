@@ -6,9 +6,9 @@ import { absoluteUrl } from "@/lib/site";
 // Built on request so new listings appear without a redeploy (the database isn't available at build time).
 export const dynamic = "force-dynamic";
 
-/** /sitemap.xml — the home page, search landing pages and every public listing. */
+/** /sitemap.xml — the home page, search landing pages and every public listing and landlord profile. */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [listings, regionsWithHomes, typesWithHomes] = await Promise.all([
+  const [listings, regionsWithHomes, typesWithHomes, landlords] = await Promise.all([
     prisma.property.findMany({
       where: { isHidden: false, status: "AVAILABLE" },
       select: { id: true, updatedAt: true },
@@ -17,6 +17,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }),
     prisma.property.groupBy({ by: ["region"], where: { isHidden: false, status: "AVAILABLE" } }),
     prisma.property.groupBy({ by: ["propertyType"], where: { isHidden: false, status: "AVAILABLE" } }),
+    // Landlord profiles worth indexing: those with at least one public, available home.
+    prisma.user.findMany({
+      where: { role: "LANDLORD", properties: { some: { isHidden: false, status: "AVAILABLE" } } },
+      select: { id: true, updatedAt: true },
+      take: 4_000,
+    }),
   ]);
 
   const now = new Date();
@@ -49,6 +55,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: l.updatedAt,
       changeFrequency: "weekly" as const,
       priority: 0.8,
+    })),
+    ...landlords.map((l) => ({
+      url: absoluteUrl(`/landlords/${l.id}`),
+      lastModified: l.updatedAt,
+      changeFrequency: "weekly" as const,
+      priority: 0.5,
     })),
   ];
 }

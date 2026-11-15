@@ -1,6 +1,6 @@
 import { prisma } from "./prisma";
 import { appUrl, sendEmail } from "./email";
-import { newMessageEmail, savedSearchAlertEmail, viewingAnsweredEmail, viewingCancelledEmail, viewingRequestedEmail } from "./email-templates";
+import { newMessageEmail, reviewReceivedEmail, savedSearchAlertEmail, viewingAnsweredEmail, viewingCancelledEmail, viewingRequestedEmail } from "./email-templates";
 import { propertyTypeLabel } from "./constants";
 import { ALERT_THROTTLE_MS, filtersFromQuery, listingMatches, unsubscribeToken } from "./saved-searches";
 import { parseJsonArray } from "./utils";
@@ -182,5 +182,28 @@ export async function notifySavedSearchMatches(propertyId: string): Promise<numb
   } catch (err) {
     console.error("[notify] saved search matches:", err instanceof Error ? err.message : err);
     return 0;
+  }
+}
+
+/** Tells the landlord they were reviewed. */
+export async function notifyReviewReceived(reviewId: string) {
+  try {
+    const r = await prisma.review.findUnique({
+      where: { id: reviewId },
+      include: { tenant: { select: { name: true } }, landlord: { select: { name: true, email: true } } },
+    });
+    if (!r) return;
+    const email = reviewReceivedEmail({
+      landlordName: r.landlord.name,
+      tenantName: r.tenant.name,
+      propertyTitle: r.propertyTitle,
+      landlordRating: r.landlordRating,
+      accuracyRating: r.accuracyRating,
+      comment: r.comment,
+      dashboardUrl: `${appUrl()}/dashboard/landlord#reviews`,
+    });
+    await sendEmail({ to: r.landlord.email, ...email });
+  } catch (err) {
+    console.error("[notify] review received:", err instanceof Error ? err.message : err);
   }
 }

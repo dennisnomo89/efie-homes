@@ -27,6 +27,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { AMENITIES, advanceLabel, propertyTypeLabel } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import { getSavedIds, landlordSelect, toView } from "@/lib/properties";
+import { landlordRatingSummary, listingAccuracy } from "@/lib/reviews";
+import { RatingSummaryLine } from "@/components/reviews/Stars";
 import { jsonLdScript, listingJsonLd, listingSummary } from "@/lib/seo";
 import { absoluteUrl } from "@/lib/site";
 import { cn, favoriteModeFor, formatCedis, formatDate, initials } from "@/lib/utils";
@@ -70,7 +72,7 @@ export default async function PropertyDetailPage({ params }: Props) {
   if (!canManage) await prisma.property.update({ where: { id }, data: { views: { increment: 1 } } });
 
   const property = toView(raw);
-  const [savedIds, similarRaw, pendingRequest] = await Promise.all([
+  const [savedIds, similarRaw, pendingRequest, landlordRating, accuracy] = await Promise.all([
     getSavedIds(user?.id),
     prisma.property.findMany({
       where: { id: { not: id }, status: "AVAILABLE", isHidden: false, OR: [{ neighborhood: property.neighborhood }, { region: property.region }] },
@@ -81,6 +83,8 @@ export default async function PropertyDetailPage({ params }: Props) {
     user?.role === "TENANT"
       ? prisma.viewingRequest.findFirst({ where: { propertyId: id, tenantId: user.id }, orderBy: { createdAt: "desc" } })
       : Promise.resolve(null),
+    landlordRatingSummary(raw.landlordId),
+    listingAccuracy(id),
   ]);
   const similar = similarRaw.map(toView);
   const rented = property.status === "RENTED";
@@ -247,19 +251,35 @@ export default async function PropertyDetailPage({ params }: Props) {
               </p>
             </div>
 
-            <div className="card flex items-center gap-4 p-5">
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-terracotta-100 font-bold text-terracotta-700">
-                {initials(raw.landlord.name)}
-              </span>
-              <div className="min-w-0">
-                <p className="flex items-center gap-1.5 font-semibold">
-                  <span className="truncate">{raw.landlord.name}</span>
-                  {raw.landlord.isVerified && <BadgeCheck className="h-4 w-4 shrink-0 text-forest-600" aria-label="Verified" />}
-                </p>
-                <p className="text-xs text-stone-500">
-                  {raw.landlord.isVerified ? "Verified landlord/agent" : "Landlord/agent"} · {raw.landlord._count.properties}{" "}
-                  {raw.landlord._count.properties === 1 ? "listing" : "listings"} · Joined {formatDate(raw.landlord.createdAt, { month: "short", year: "numeric" })}
-                </p>
+            <div className="card p-5">
+              <div className="flex items-center gap-4">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-terracotta-100 font-bold text-terracotta-700">
+                  {initials(raw.landlord.name)}
+                </span>
+                <div className="min-w-0">
+                  <p className="flex items-center gap-1.5 font-semibold">
+                    <Link href={`/landlords/${raw.landlordId}`} className="truncate hover:text-forest-800 hover:underline">
+                      {raw.landlord.name}
+                    </Link>
+                    {raw.landlord.isVerified && <BadgeCheck className="h-4 w-4 shrink-0 text-forest-600" aria-label="Verified" />}
+                  </p>
+                  <p className="text-xs text-stone-500">
+                    {raw.landlord.isVerified ? "Verified landlord/agent" : "Landlord/agent"} · {raw.landlord._count.properties}{" "}
+                    {raw.landlord._count.properties === 1 ? "listing" : "listings"} · Joined {formatDate(raw.landlord.createdAt, { month: "short", year: "numeric" })}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 space-y-1 border-t border-stone-100 pt-3">
+                <RatingSummaryLine rating={landlordRating.landlord} count={landlordRating.count} />
+                {accuracy.count > 0 && (
+                  <p className="text-xs text-stone-600">
+                    This listing rated <strong>{accuracy.accuracy.toFixed(1)}/5</strong> for accuracy by {accuracy.count}{" "}
+                    {accuracy.count === 1 ? "visitor" : "visitors"}
+                  </p>
+                )}
+                <Link href={`/landlords/${raw.landlordId}`} className="inline-block text-sm font-semibold text-forest-700 hover:underline">
+                  View profile and reviews
+                </Link>
               </div>
             </div>
           </div>

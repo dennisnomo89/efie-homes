@@ -216,3 +216,40 @@ export const savedSearchUpdateSchema = z
     name: z.string().trim().min(1, "Give the search a name").max(100, "Keep the name under 100 characters").optional(),
   })
   .refine((v) => v.emailAlerts !== undefined || v.name !== undefined, { message: "Nothing to update" });
+
+export const REVIEW_TEXT_MAX = 1000;
+
+const stars = (label: string) =>
+  z
+    .number({ error: `Choose a ${label} rating` })
+    .int(`Choose a ${label} rating`)
+    .min(1, `Choose a ${label} rating`)
+    .max(5, `Choose a ${label} rating`);
+
+const optionalText = z
+  .string()
+  .trim()
+  .max(REVIEW_TEXT_MAX, `Keep it under ${REVIEW_TEXT_MAX.toLocaleString()} characters`)
+  .optional()
+  .transform((v) => (v ? v : null));
+
+export const reviewCreateSchema = z.object({
+  viewingRequestId: z.string().min(1),
+  landlordRating: stars("landlord"),
+  accuracyRating: stars("listing accuracy"),
+  comment: optionalText,
+});
+
+/** What each party may change: the author their ratings/comment, the landlord a reply, an admin visibility. */
+export const reviewEditSchema = z
+  .object({
+    landlordRating: stars("landlord").optional(),
+    accuracyRating: stars("listing accuracy").optional(),
+    // Absent = keep the current comment; "" = remove it (unlike optionalText, which maps absent to null).
+    comment: z.string().trim().max(REVIEW_TEXT_MAX, `Keep it under ${REVIEW_TEXT_MAX.toLocaleString()} characters`).optional(),
+  })
+  .refine((v) => v.landlordRating !== undefined || v.accuracyRating !== undefined || v.comment !== undefined, { message: "Nothing to update" });
+export const reviewReplySchema = z.object({
+  landlordReply: z.string().trim().min(1, "Write a reply").max(REVIEW_TEXT_MAX, `Keep it under ${REVIEW_TEXT_MAX.toLocaleString()} characters`),
+});
+export const reviewModerationSchema = z.object({ isHidden: z.boolean() });

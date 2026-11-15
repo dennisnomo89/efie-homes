@@ -7,6 +7,8 @@ import { SavedSearchActions } from "@/components/dashboard/SavedSearchActions";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
 import { PropertyCard } from "@/components/PropertyCard";
+import { ReviewForm } from "@/components/reviews/ReviewActions";
+import { Stars } from "@/components/reviews/Stars";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SafeImage } from "@/components/ui/SafeImage";
 import { requireUser } from "@/lib/auth";
@@ -40,6 +42,7 @@ export default async function TenantDashboard({ searchParams }: Props) {
             landlord: { select: { name: true, phone: true } },
           },
         },
+        review: { select: { id: true, landlordRating: true, accuracyRating: true, comment: true, isHidden: true } },
       },
     }),
     prisma.savedProperty.findMany({
@@ -48,6 +51,11 @@ export default async function TenantDashboard({ searchParams }: Props) {
       include: { property: { include: { landlord: { select: landlordSelect } } } },
     }),
   ]);
+
+  // A confirmed viewing can be reviewed from the day it happens.
+  const endOfToday = new Date();
+  endOfToday.setUTCHours(23, 59, 59, 999);
+  const canReview = (v: (typeof viewings)[number]) => v.status === "CONFIRMED" && v.preferredDate <= endOfToday;
 
   const count = (s: string) => viewings.filter((v) => v.status === s).length;
   const viewingIds = viewings.map((v) => v.id);
@@ -120,6 +128,19 @@ export default async function TenantDashboard({ searchParams }: Props) {
                       </a>
                     )}
                   </div>
+                  {canReview(v) && (
+                    <div className="flex flex-col gap-2 border-t border-stone-100 pt-3 sm:basis-full">
+                      {v.review ? (
+                        <p className="flex flex-wrap items-center gap-2 text-sm text-stone-600">
+                          Your review: <Stars value={v.review.landlordRating} />
+                          {v.review.isHidden && <span className="text-terracotta-700">(hidden by an admin)</span>}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-stone-600">How did the viewing go? Your review helps other renters.</p>
+                      )}
+                      <ReviewForm viewingId={v.id} landlordName={v.property.landlord.name.split(" ")[0]} existing={v.review ?? undefined} />
+                    </div>
+                  )}
                   {v.landlordNote && (
                     <p className="flex gap-2 rounded-xl bg-sand p-3 text-sm text-stone-700 sm:basis-full">
                       <MessageSquareText className="mt-0.5 h-4 w-4 shrink-0 text-stone-500" />

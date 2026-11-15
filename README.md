@@ -92,7 +92,7 @@ Every push to `main` then redeploys automatically.
 efie-homes/
 ├── prisma/
 │   ├── schema.prisma          # User, Property, ViewingRequest, SavedProperty
-│   ├── seed.ts                # 8 users, 19 properties (Accra, Tema, Kumasi, Takoradi), viewings, wishlists
+│   ├── seed.ts                # 8 users, 19 properties (Accra, Tema, Kumasi, Takoradi), viewings, reviews, wishlists
 │   └── migrations/
 ├── src/
 │   ├── proxy.ts               # (Next 16 "proxy", formerly middleware) Protects /dashboard/*, role routing, bounces signed-in users from /login
@@ -110,7 +110,7 @@ efie-homes/
 │   │   ├── (auth)/login, (auth)/register
 │   │   ├── properties/                 # search + filters (+ loading skeleton)
 │   │   ├── properties/[id]/            # detail, gallery, advance calculator, viewing modal
-│   │   ├── dashboard/tenant            # viewings + wishlist
+│   │   ├── dashboard/tenant            # viewings (+ reviews) + wishlist
 │   │   ├── dashboard/landlord          # metrics, requests, listings
 │   │   ├── dashboard/landlord/properties/new | [id]/edit
 │   │   ├── dashboard/profile
@@ -156,6 +156,9 @@ All endpoints take and return JSON. Validation failures return `422` with `{ err
 | `PATCH /api/viewings/:id` | Owner/Admin | `{ status: "CONFIRMED" \| "DECLINED", landlordNote? }` |
 | `DELETE /api/viewings/:id` | Tenant (own) | Pending requests only |
 | `GET/POST /api/favorites`, `DELETE /api/favorites/:propertyId` | Tenant | Wishlist |
+| `POST /api/reviews` | Tenant | `{ viewingRequestId, landlordRating: 1-5, accuracyRating: 1-5, comment? }` — confirmed viewings dated today or earlier, once each |
+| `PATCH /api/reviews/:id` | Author / reviewed landlord / Admin | Author: `{ landlordRating?, accuracyRating?, comment? }`; landlord: `{ landlordReply }`; admin: `{ isHidden }` |
+| `DELETE /api/reviews/:id` | Author/Admin | |
 | `PATCH /api/profile` | Any | `{ name, phone?, avatarUrl?, currentPassword?, newPassword? }` |
 | `PATCH /api/admin/users/:id` | Admin | `{ isVerified }` (landlord/agent accounts only) |
 | `PATCH /api/admin/properties/:id` | Admin | `{ isHidden?, isFeatured? }` (hiding also unfeatures) |
@@ -234,6 +237,15 @@ Known limitation: resetting a password doesn't sign out sessions that are alread
 - Each alert includes a signed one-click unsubscribe link (no login needed) and `List-Unsubscribe` headers, so Gmail/Outlook show their own unsubscribe button.
 - API: `GET/POST /api/saved-searches`, `PATCH/DELETE /api/saved-searches/:id`, `GET /api/saved-searches/:id/open`, `GET|POST /api/saved-searches/:id/unsubscribe?token=…`.
 - Scale note: matching loads all searches with alerts on each time a listing is published. That's fine for thousands of saved searches; beyond that, move matching to a background job.
+
+## Reviews & ratings
+
+- After a **confirmed** viewing has taken place (its date is today or earlier), the tenant can rate the landlord (1–5) and how accurate the listing was (1–5), with an optional comment, from their dashboard. One review per viewing; the author can edit or delete it.
+- The landlord gets an email, sees every review in the **Reviews of you** section of their dashboard and can post one public reply.
+- Every landlord has a public profile at `/landlords/:id` (linked from each listing) with their average rating, a star breakdown, their homes and the reviews. Reviewers are shown as first name + initial ("Ama S.").
+- Listing pages show the landlord's rating and how accurate *that* listing was rated.
+- Admins can hide abusive reviews from the admin view of the landlord dashboard or the profile page; hidden reviews don't count towards averages.
+- The review keeps a copy of the listing title, so it survives the listing being deleted.
 
 ## Search engines & sharing
 

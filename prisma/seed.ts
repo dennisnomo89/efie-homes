@@ -510,6 +510,7 @@ async function main() {
     process.exit(1);
   }
 
+  await prisma.review.deleteMany();
   await prisma.savedProperty.deleteMany();
   await prisma.viewingRequest.deleteMany();
   await prisma.property.deleteMany();
@@ -630,7 +631,91 @@ async function main() {
     ],
   });
 
-  console.log(`✅ Seeded ${await prisma.user.count()} users, ${created.length} properties.`);
+  // Past confirmed viewings, most with a review (and some with the landlord's reply).
+  type PastViewing = {
+    tenant: { id: string; phone: string | null };
+    property: string;
+    daysAgo: number;
+    review?: { landlordRating: number; accuracyRating: number; comment?: string; reply?: string };
+  };
+  const pastViewings: PastViewing[] = [
+    {
+      tenant: abena,
+      property: "Tema Community 25",
+      daysAgo: 20,
+      review: {
+        landlordRating: 5,
+        accuracyRating: 4,
+        comment: "Kwame was on time and answered all my questions about water and the ECG meter. The house is as shown, just the garden is smaller than the photos suggest.",
+        reply: "Thank you Abena! Glad the viewing went well.",
+      },
+    },
+    {
+      tenant: kofi,
+      property: "Adenta",
+      daysAgo: 35,
+      review: { landlordRating: 4, accuracyRating: 3, comment: "Friendly landlord. The room is clean but smaller than I expected from the pictures." },
+    },
+    {
+      tenant: ama,
+      property: "Labone",
+      daysAgo: 12,
+      review: { landlordRating: 5, accuracyRating: 5, comment: "Very professional. The apartment looked exactly like the listing and the rent and advance were clearly explained." },
+    },
+    {
+      tenant: abena,
+      property: "Cantonments",
+      daysAgo: 40,
+      review: {
+        landlordRating: 3,
+        accuracyRating: 4,
+        comment: "Nice house, but the agent arrived 40 minutes late and I had to wait at the gate.",
+        reply: "Sorry about the wait, Abena. There was heavy traffic on the Spintex Road that day. We now confirm the time by phone the morning of every viewing.",
+      },
+    },
+    {
+      tenant: kofi,
+      property: "Nhyiaeso",
+      daysAgo: 15,
+      review: { landlordRating: 5, accuracyRating: 5, comment: "Yaw showed me round himself and was very patient. Highly recommended in Kumasi." },
+    },
+    // No review yet, so Ama's dashboard shows "Leave a review".
+    { tenant: ama, property: "Airport Residential", daysAgo: 3 },
+  ];
+  for (const v of pastViewings) {
+    const property = byTitle(v.property);
+    await prisma.viewingRequest.create({
+      data: {
+        propertyId: property.id,
+        tenantId: v.tenant.id,
+        preferredDate: daysFromNow(-v.daysAgo),
+        preferredTime: "11:00",
+        phone: v.tenant.phone ?? "0000000000",
+        message: "Hello, I'd like to come and see this place. Is it still available?",
+        status: "CONFIRMED",
+        landlordNote: "Yes, see you then.",
+        createdAt: daysFromNow(-v.daysAgo - 3),
+        ...(v.review && {
+          review: {
+            create: {
+              propertyId: property.id,
+              propertyTitle: property.title,
+              tenantId: v.tenant.id,
+              landlordId: property.landlordId,
+              landlordRating: v.review.landlordRating,
+              accuracyRating: v.review.accuracyRating,
+              comment: v.review.comment ?? null,
+              landlordReply: v.review.reply ?? null,
+              repliedAt: v.review.reply ? daysFromNow(-v.daysAgo + 2) : null,
+              createdAt: daysFromNow(-v.daysAgo + 1),
+            },
+          },
+        }),
+      },
+    });
+  }
+
+  console.log(`✅ Seeded ${await prisma.user.count()} users, ${created.length} properties, ${await prisma.review.count()} reviews.`);
   console.log("   All accounts use the password: Password123");
 }
 

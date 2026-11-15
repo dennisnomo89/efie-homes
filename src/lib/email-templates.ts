@@ -256,3 +256,39 @@ export function savedSearchAlertEmail(p: {
     ].join("\n"),
   };
 }
+
+export function reviewReceivedEmail(p: {
+  landlordName: string;
+  tenantName: string;
+  propertyTitle: string;
+  landlordRating: number;
+  accuracyRating: number;
+  comment: string | null;
+  dashboardUrl: string;
+}): Rendered {
+  const stars = (n: number) => "★".repeat(n) + "☆".repeat(5 - n);
+  const subject = `New review from ${p.tenantName} (${p.landlordRating}/5)`;
+  const rows: [string, string][] = [
+    ["Property", p.propertyTitle],
+    ["As a landlord", `${stars(p.landlordRating)} ${p.landlordRating}/5`],
+    ["Listing accuracy", `${stars(p.accuracyRating)} ${p.accuracyRating}/5`],
+  ];
+  return {
+    subject,
+    html: layout({
+      preheader: `${p.tenantName} reviewed their viewing of ${p.propertyTitle}.`,
+      heading: "You have a new review",
+      body: `Hi ${escapeHtml(firstName(p.landlordName))},<br>${escapeHtml(p.tenantName)} reviewed their viewing.${detailRows(rows)}${p.comment ? `What they said:${quote(p.comment)}` : ""}You can post one public reply from your dashboard.`,
+      cta: { label: "Read and reply", url: p.dashboardUrl },
+    }),
+    text: [
+      `Hi ${firstName(p.landlordName)},`,
+      ``,
+      `${p.tenantName} reviewed their viewing.`,
+      ...rows.map(([k, v]) => `${k}: ${v}`),
+      ...(p.comment ? ["", "What they said:", p.comment] : []),
+      ``,
+      `Read and reply: ${p.dashboardUrl}`,
+    ].join("\n"),
+  };
+}

@@ -1,17 +1,21 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Building2, CalendarDays, Eye, Inbox, KeyRound, MapPin, MessageSquareText, Phone, Plus, Wallet } from "lucide-react";
+import { Building2, CalendarDays, Star, Eye, Inbox, KeyRound, MapPin, MessageSquareText, Phone, Plus, Wallet } from "lucide-react";
 import { ListingActions } from "@/components/dashboard/ListingActions";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
 import { MessageThread } from "@/components/dashboard/MessageThread";
 import { ViewingRequestActions } from "@/components/dashboard/ViewingRequestActions";
+import { HideReviewButton, ReplyForm } from "@/components/reviews/ReviewActions";
+import { ReviewCard } from "@/components/reviews/ReviewCard";
+import { RatingSummaryLine } from "@/components/reviews/Stars";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SafeImage } from "@/components/ui/SafeImage";
 import { requireUser } from "@/lib/auth";
 import { advanceLabel, propertyTypeLabel } from "@/lib/constants";
 import { messageTotals, unreadCounts } from "@/lib/messages";
 import { prisma } from "@/lib/prisma";
+import { landlordRatingSummary } from "@/lib/reviews";
 import { cn, formatCedis, formatDate, formatTime, parseJsonArray } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Landlord dashboard" };
@@ -25,7 +29,7 @@ export default async function LandlordDashboard({ searchParams }: Props) {
   const isAdmin = user.role === "ADMIN";
   const ownerWhere = isAdmin ? {} : { landlordId: user.id };
 
-  const [listings, requests] = await Promise.all([
+  const [listings, requests, reviews, rating] = await Promise.all([
     prisma.property.findMany({
       where: ownerWhere,
       orderBy: { createdAt: "desc" },
@@ -39,6 +43,14 @@ export default async function LandlordDashboard({ searchParams }: Props) {
         tenant: { select: { name: true, email: true } },
       },
     }),
+    // Landlords see every review of them (hidden ones too, flagged); admins see the latest reviews site-wide to moderate.
+    prisma.review.findMany({
+      where: isAdmin ? {} : { landlordId: user.id },
+      orderBy: { createdAt: "desc" },
+      take: isAdmin ? 20 : 50,
+      include: { tenant: { select: { name: true } }, landlord: { select: { id: true, name: true } } },
+    }),
+    isAdmin ? Promise.resolve(null) : landlordRatingSummary(user.id),
   ]);
 
   const active = listings.filter((l) => l.status === "AVAILABLE");
@@ -230,6 +242,58 @@ export default async function LandlordDashboard({ searchParams }: Props) {
               </li>
             ))}
           </ul>
+        )}
+      </section>
+
+      {/* ---------- Reviews ---------- */}
+      <section id="reviews" className="scroll-mt-24">
+        <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
+          <div>
+            <h2 className="text-xl font-semibold">{isAdmin ? "Latest reviews" : "Reviews of you"}</h2>
+            <p className="text-sm text-stone-600">
+              {isAdmin
+                ? "Hide reviews that are abusive, off-topic or share private details. Hidden reviews don't count towards ratings."
+                : "Tenants can review you after a confirmed viewing. A short, polite public reply goes a long way."}
+            </p>
+          </div>
+          {rating && (
+            <div className="flex flex-col gap-1 sm:items-end">
+              <RatingSummaryLine rating={rating.landlord} count={rating.count} />
+              <Link href={`/landlords/${user.id}`} className="text-sm font-semibold text-forest-800 hover:underline">
+                See your public profile
+              </Link>
+            </div>
+          )}
+        </div>
+        {reviews.length === 0 ? (
+          <div className="mt-5">
+            <EmptyState
+              icon={Star}
+              title="No reviews yet"
+              description={isAdmin ? "Reviews from tenants will appear here." : "After a confirmed viewing, tenants can rate you and how accurate your listing was."}
+            />
+          </div>
+        ) : (
+          <div className="mt-5 space-y-4">
+            {reviews.map((r) => (
+              <ReviewCard
+                key={r.id}
+                review={r}
+                actions={
+                  isAdmin ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <HideReviewButton reviewId={r.id} isHidden={r.isHidden} />
+                      <Link href={`/landlords/${r.landlord.id}`} className="text-sm text-stone-600 hover:underline">
+                        Review of {r.landlord.name}
+                      </Link>
+                    </div>
+                  ) : (
+                    <ReplyForm reviewId={r.id} existingReply={r.landlordReply} />
+                  )
+                }
+              />
+            ))}
+          </div>
         )}
       </section>
     </div>

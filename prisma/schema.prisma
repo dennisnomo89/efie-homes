@@ -19,27 +19,29 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  name         String
-  email        String   @unique
-  phone        String?
-  passwordHash String
+  id             String   @id @default(cuid())
+  name           String
+  email          String   @unique
+  phone          String?
+  passwordHash   String
   /// TENANT | LANDLORD | ADMIN
-  role         String   @default("TENANT")
+  role           String   @default("TENANT")
   /// Verified landlords/agents get a trust badge on their listings
-  isVerified   Boolean  @default(false)
+  isVerified     Boolean  @default(false)
   /// Bumped to sign the user out everywhere (password change/reset, "sign out everywhere")
-  sessionVersion Int    @default(0)
-  avatarUrl    String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  sessionVersion Int      @default(0)
+  avatarUrl      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  properties      Property[]
-  viewingRequests ViewingRequest[]
-  savedProperties SavedProperty[]
+  properties          Property[]
+  viewingRequests     ViewingRequest[]
+  savedProperties     SavedProperty[]
   passwordResetTokens PasswordResetToken[]
-  messages        Message[]
-  savedSearches   SavedSearch[]
+  messages            Message[]
+  savedSearches       SavedSearch[]
+  reviewsWritten      Review[]             @relation("ReviewAuthor")
+  reviewsReceived     Review[]             @relation("ReviewLandlord")
 }
 
 model Property {
@@ -85,6 +87,7 @@ model Property {
   landlord        User             @relation(fields: [landlordId], references: [id], onDelete: Cascade)
   viewingRequests ViewingRequest[]
   savedBy         SavedProperty[]
+  reviews         Review[]
 
   @@index([region])
   @@index([neighborhood])
@@ -107,10 +110,11 @@ model ViewingRequest {
   updatedAt     DateTime @updatedAt
 
   propertyId String
-  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  property   Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   tenantId   String
-  tenant     User     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant     User      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   messages   Message[]
+  review     Review?
 
   @@index([propertyId])
   @@index([tenantId])
@@ -171,19 +175,50 @@ model RateLimitHit {
 
 /// A tenant's saved search. `query` is the normalised filter query string (e.g. "location=Osu&bedrooms=2").
 model SavedSearch {
-  id              String    @id @default(cuid())
-  name            String
-  query           String
-  emailAlerts     Boolean   @default(true)
+  id             String    @id @default(cuid())
+  name           String
+  query          String
+  emailAlerts    Boolean   @default(true)
   /// Last alert email sent for this search (alerts are throttled)
-  lastNotifiedAt  DateTime?
+  lastNotifiedAt DateTime?
   /// When the tenant last opened the results (for "N new" counts)
-  lastSeenAt      DateTime  @default(now())
-  createdAt       DateTime  @default(now())
+  lastSeenAt     DateTime  @default(now())
+  createdAt      DateTime  @default(now())
 
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, query])
   @@index([emailAlerts])
+}
+
+/// A tenant's review of a landlord after a confirmed viewing that has taken place (one per viewing).
+/// Survives deletion of the listing or viewing, so landlords can't erase their history by relisting.
+model Review {
+  id             String    @id @default(cuid())
+  /// 1–5: how the landlord/agent was to deal with
+  landlordRating Int
+  /// 1–5: how closely the home matched its listing
+  accuracyRating Int
+  comment        String?
+  landlordReply  String?
+  repliedAt      DateTime?
+  /// Hidden by an admin (abusive or off-topic)
+  isHidden       Boolean   @default(false)
+  /// Listing title at review time (kept if the listing is deleted)
+  propertyTitle  String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  viewingRequestId String?         @unique
+  viewingRequest   ViewingRequest? @relation(fields: [viewingRequestId], references: [id], onDelete: SetNull)
+  propertyId       String?
+  property         Property?       @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  tenantId         String
+  tenant           User            @relation("ReviewAuthor", fields: [tenantId], references: [id], onDelete: Cascade)
+  landlordId       String
+  landlord         User            @relation("ReviewLandlord", fields: [landlordId], references: [id], onDelete: Cascade)
+
+  @@index([landlordId, isHidden])
+  @@index([propertyId])
 }
