@@ -256,6 +256,12 @@ Known limitation: resetting a password doesn't sign out sessions that are alread
 - Admins can hide abusive reviews from the admin view of the landlord dashboard or the profile page; hidden reviews don't count towards averages.
 - The review keeps a copy of the listing title, so it survives the listing being deleted.
 
+## Neighbourhood guides
+
+- `/areas` lists every neighbourhood with homes to rent, by region, with how many homes and the typical rent. `/areas/:slug` (e.g. `/areas/east-legon`) is the guide: typical (median) rent and range, typical rent per type of home, the advance most landlords ask for and what that comes to, the share furnished, the share with each essential (prepaid meter, GWCL water, borehole, standby power, walled & gated) and the homes themselves.
+- Figures come from the public, available listings at the time, worked out by `areaStats` in `src/lib/areas.ts`. Neighbourhood spellings are merged by slug ("East Legon" / "east legon"), and with fewer than 5 homes the guide says the figures are only a rough guide. Areas with nothing to rent return 404.
+- Linked from every listing ("See typical rents and amenities in the area guide"), the footer and the sitemap.
+
 ## Listing insights (landlords)
 
 - **Insights** on each listing in the landlord dashboard opens `/dashboard/landlord/properties/:id/insights`: views, saves and viewing requests for the last 30 days (with the change in views against the 30 days before), a daily views chart with a hover / arrow-key tooltip and a table view, all-time totals, and plain suggestions based on where tenants drop off.

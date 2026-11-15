@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { PROPERTY_TYPES, REGIONS } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
+import { listAreas } from "@/lib/areas-data";
 import { absoluteUrl } from "@/lib/site";
 
 // Built on request so new listings appear without a redeploy (the database isn't available at build time).
@@ -8,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 /** /sitemap.xml — the home page, search landing pages and every public listing and landlord profile. */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [listings, regionsWithHomes, typesWithHomes, landlords] = await Promise.all([
+  const [listings, regionsWithHomes, typesWithHomes, landlords, areas] = await Promise.all([
     prisma.property.findMany({
       where: { isHidden: false, status: "AVAILABLE" },
       select: { id: true, updatedAt: true },
@@ -23,6 +24,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       select: { id: true, updatedAt: true },
       take: 4_000,
     }),
+    listAreas(),
   ]);
 
   const now = new Date();
@@ -55,6 +57,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: l.updatedAt,
       changeFrequency: "weekly" as const,
       priority: 0.8,
+    })),
+    { url: absoluteUrl("/areas"), lastModified: now, changeFrequency: "daily" as const, priority: 0.7 },
+    ...areas.map((a) => ({
+      url: absoluteUrl(`/areas/${a.slug}`),
+      lastModified: now,
+      changeFrequency: "daily" as const,
+      priority: 0.6,
     })),
     ...landlords.map((l) => ({
       url: absoluteUrl(`/landlords/${l.id}`),

@@ -52,11 +52,13 @@ describe("listing insights", () => {
   it("is only for the listing's landlord and admins", async () => {
     // Another landlord gets the not-found page. (Its status is 200: the dashboard layout has already
     // started streaming by the time the page checks ownership, so only the content can change.)
-    const other = await (await as("akosua")).get(insights());
+    // Log in all three at once: password checks are deliberately slow.
+    const [akosua, admin, ama] = await Promise.all([as("akosua"), as("admin"), as("ama")]);
+    const other = await akosua.get(insights());
     expect(other.body).not.toContain("Daily views");
     expect(other.body).not.toContain(title);
-    expect((await (await as("admin")).get(insights())).status).toBe(200);
-    const tenant = await (await as("ama")).get(insights());
+    expect((await admin.get(insights())).status).toBe(200);
+    const tenant = await ama.get(insights());
     expect([307, 308]).toContain(tenant.status);
     const visitor = await anon().get(insights());
     expect([307, 308]).toContain(visitor.status);

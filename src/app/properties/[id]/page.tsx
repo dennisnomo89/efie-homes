@@ -29,6 +29,7 @@ import { ShareButton } from "@/components/ShareButton";
 import { getCurrentUser } from "@/lib/auth";
 import { AMENITIES, advanceLabel, propertyTypeLabel } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
+import { areaSlug } from "@/lib/areas";
 import { isBot, recordListingView } from "@/lib/insights";
 import { priceDrop } from "@/lib/price-drop";
 import { getSavedIds, landlordSelect, toView } from "@/lib/properties";
@@ -188,6 +189,16 @@ export default async function PropertyDetailPage({ params }: Props) {
                 viewing is confirmed.
               </p>
             </section>
+          )}
+
+          {!property.isHidden && areaSlug(property.neighborhood) && (
+            <p className="mt-6 rounded-xl bg-sand p-3 text-sm text-stone-700">
+              Thinking about {property.neighborhood}?{" "}
+              <Link href={`/areas/${areaSlug(property.neighborhood)}`} className="font-semibold text-forest-800 hover:underline">
+                See typical rents and amenities in the area guide
+              </Link>
+              .
+            </p>
           )}
 
           <section className="mt-10">

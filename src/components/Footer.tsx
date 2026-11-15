@@ -8,6 +8,7 @@ const cols = [
     title: "Explore",
     links: [
       { href: "/properties", label: "All rentals" },
+      { href: "/areas", label: "Neighbourhood guides" },
       { href: "/properties?location=East+Legon", label: "East Legon" },
       { href: "/properties?location=Osu", label: "Osu" },
       { href: "/properties?location=Spintex", label: "Spintex" },

@@ -117,8 +117,10 @@ describe.skipIf(!outboxEnabled)("password reset", () => {
     // Fire them simultaneously: the limit must hold even when requests race each other.
     await Promise.all(Array.from({ length: 4 }, () => anon().post("/api/auth/forgot-password", { email })));
     // One request was already made above, so only 2 more emails may be sent this hour.
-    const emails = await waitForEmails(email, start, 3, 4_000);
-    expect(emails).toHaveLength(2);
+    // Wait generously for those two (emails go out after the response, slower on a busy machine),
+    // then a little longer to make sure no third one follows.
+    expect(await waitForEmails(email, start, 2, 15_000)).toHaveLength(2);
+    expect(await waitForEmails(email, start, 3, 3_000)).toHaveLength(2);
   });
 });
 
