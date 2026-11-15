@@ -92,7 +92,7 @@ Every push to `main` then redeploys automatically.
 efie-homes/
 ├── prisma/
 │   ├── schema.prisma          # User, Property, ViewingRequest, SavedProperty
-│   ├── seed.ts                # 8 users, 19 properties (Accra, Tema, Kumasi, Takoradi), viewings, reviews, reports, wishlists
+│   ├── seed.ts                # 8 users, 19 properties (Accra, Tema, Kumasi, Takoradi), viewings, reviews, reports, wishlists, 60 days of daily views
 │   └── migrations/
 ├── src/
 │   ├── proxy.ts               # (Next 16 "proxy", formerly middleware) Protects /dashboard/*, role routing, bounces signed-in users from /login
@@ -248,6 +248,13 @@ Known limitation: resetting a password doesn't sign out sessions that are alread
 - Listing pages show the landlord's rating and how accurate *that* listing was rated.
 - Admins can hide abusive reviews from the admin view of the landlord dashboard or the profile page; hidden reviews don't count towards averages.
 - The review keeps a copy of the listing title, so it survives the listing being deleted.
+
+## Listing insights (landlords)
+
+- **Insights** on each listing in the landlord dashboard opens `/dashboard/landlord/properties/:id/insights`: views, saves and viewing requests for the last 30 days (with the change in views against the 30 days before), a daily views chart with a hover / arrow-key tooltip and a table view, all-time totals, and plain suggestions based on where tenants drop off.
+- Views are counted per day in `PropertyViewDay` (UTC, which is Ghana time) by `recordListingView` in `src/lib/insights.ts`, with one `INSERT … ON CONFLICT` so simultaneous first views can't collide. The owner, admins and robots (search engines, WhatsApp/Facebook link previews, Lighthouse, curl…) aren't counted.
+- Saves and requests per day come from the existing `SavedProperty` and `ViewingRequest` dates, so they cover the full history.
+- Only the listing's landlord and admins can open it; anyone else gets the not-found page.
 
 ## Price drops & wishlist emails
 

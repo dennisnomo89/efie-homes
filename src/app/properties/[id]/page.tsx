@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import {
   BadgeCheck,
@@ -28,6 +29,7 @@ import { ShareButton } from "@/components/ShareButton";
 import { getCurrentUser } from "@/lib/auth";
 import { AMENITIES, advanceLabel, propertyTypeLabel } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
+import { isBot, recordListingView } from "@/lib/insights";
 import { priceDrop } from "@/lib/price-drop";
 import { getSavedIds, landlordSelect, toView } from "@/lib/properties";
 import { landlordRatingSummary, listingAccuracy } from "@/lib/reviews";
@@ -71,8 +73,8 @@ export default async function PropertyDetailPage({ params }: Props) {
   // Hidden listings exist only for their owner and admins.
   if (raw.isHidden && !canManage) notFound();
 
-  // Count public views only.
-  if (!canManage) await prisma.property.update({ where: { id }, data: { views: { increment: 1 } } });
+  // Count public views only (not the owner, admins or crawlers).
+  if (!canManage && !isBot((await headers()).get("user-agent"))) await recordListingView(id);
 
   const property = toView(raw);
   const [savedIds, similarRaw, pendingRequest, landlordRating, accuracy, myReport] = await Promise.all([

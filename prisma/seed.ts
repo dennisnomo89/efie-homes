@@ -511,6 +511,7 @@ async function main() {
   }
 
   await prisma.listingReport.deleteMany();
+  await prisma.propertyViewDay.deleteMany();
   await prisma.review.deleteMany();
   await prisma.savedProperty.deleteMany();
   await prisma.viewingRequest.deleteMany();
@@ -556,6 +557,22 @@ async function main() {
     if (!found) throw new Error(`Seed property not found: ${needle}`);
     return found;
   };
+
+  // 60 days of daily views per listing (deterministic, busier at weekends), so landlord insights have a history.
+  let rand = 42;
+  const next = () => ((rand = (rand * 1103515245 + 12345) % 2 ** 31) / 2 ** 31);
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  for (const p of created) {
+    const base = Math.max(1, Math.round(p.views / 90));
+    const days = Math.min(60, Math.max(1, Math.round((today.getTime() - p.createdAt.getTime()) / 86_400_000) + 1));
+    const rows = Array.from({ length: days }, (_, i) => {
+      const day = new Date(today.getTime() - i * 86_400_000);
+      const weekend = day.getUTCDay() === 0 || day.getUTCDay() === 6 ? 1.6 : 1;
+      return { propertyId: p.id, day, views: Math.round(base * weekend * (0.4 + next() * 1.2)) };
+    }).filter((r) => r.views > 0);
+    await prisma.propertyViewDay.createMany({ data: rows });
+  }
 
   // A recent rent cut on a home Ama saved, so the "Price dropped" badge shows in the demo.
   const labone = byTitle("Labone");

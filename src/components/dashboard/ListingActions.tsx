@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Eye, KeyRound, Loader2, Pencil, Trash2, Undo2 } from "lucide-react";
+import { ChartColumn, Eye, KeyRound, Loader2, Pencil, Trash2, Undo2 } from "lucide-react";
 import { useToast } from "../ui/Toast";
 import { ConfirmButton } from "../ui/ConfirmButton";
 
@@ -49,6 +49,9 @@ export function ListingActions({ id, title, status }: { id: string; title: strin
       </Link>
       <Link href={`/dashboard/landlord/properties/${id}/edit`} className="btn btn-sm btn-ghost">
         <Pencil className="h-4 w-4" /> Edit
+      </Link>
+      <Link href={`/dashboard/landlord/properties/${id}/insights`} className="btn btn-sm btn-ghost">
+        <ChartColumn className="h-4 w-4" /> Insights
       </Link>
       <button onClick={toggleStatus} disabled={busy} className="btn btn-sm btn-ghost">
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : rented ? <Undo2 className="h-4 w-4" /> : <KeyRound className="h-4 w-4" />}

@@ -90,11 +90,12 @@ model Property {
   updatedAt       DateTime  @updatedAt
 
   landlordId      String
-  landlord        User             @relation(fields: [landlordId], references: [id], onDelete: Cascade)
+  landlord        User              @relation(fields: [landlordId], references: [id], onDelete: Cascade)
   viewingRequests ViewingRequest[]
   savedBy         SavedProperty[]
   reviews         Review[]
   reports         ListingReport[]
+  viewDays        PropertyViewDay[]
 
   @@index([region])
   @@index([neighborhood])
@@ -253,4 +254,14 @@ model ListingReport {
   /// One report per person per listing; reporting again after it was closed reopens it.
   @@unique([propertyId, reporterId])
   @@index([status, createdAt])
+}
+
+/// Public page views of a listing per day (UTC, which is Ghana time), for landlord insights.
+model PropertyViewDay {
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  day        DateTime @db.Date
+  views      Int      @default(0)
+
+  @@id([propertyId, day])
 }
