@@ -75,6 +75,9 @@ Every push to `main` then redeploys automatically.
 | `npm run dev` | Dev server |
 | `npm run build` / `npm start` | Production build / serve |
 | `npm run typecheck` | `tsc --noEmit` |
+| `npm test` | Unit tests (no database needed) |
+| `npm run test:api` | API tests against a running app (see Testing) |
+| `npm run make-admin -- <email>` | Promote an account to admin in the `.env` database |
 | `npm run db:migrate` | `prisma migrate dev` (create a new migration after schema changes) |
 | `npm run db:deploy` | `prisma migrate deploy` (apply migrations) |
 | `npm run db:seed` | Re-run `prisma/seed.ts` (wipes and reloads demo data) |
@@ -185,6 +188,23 @@ Then log out and back in: the role is stored in the session cookie.
 - **Locations:** all 16 regions, plus suggested neighbourhoods (East Legon, Osu, Cantonments, Spintex, Tema, Kumasi – Ahodwo, Takoradi, …). The free-text location search matches region, neighbourhood, address and title.
 - **Amenities:** ECG Prepaid Meter, Ghana Water (GWCL) Flow, Borehole/Polytank Backup, Standby Generator/Solar, Walled & Gated, 24/7 Security, POP Ceiling, Air Conditioning, Parking Space.
 - **Phone validation:** Ghanaian numbers such as `024 123 4567` or `+233 24 123 4567`.
+
+## Testing
+
+Tests use [Vitest](https://vitest.dev) and live in `tests/`.
+
+- **Unit tests** (`tests/unit`): validation rules, search filters, the upfront-cost calculator (`src/lib/pricing.ts`), session tokens and formatting. They need no database:
+  ```bash
+  npm test            # or: npm run test:watch
+  ```
+- **API tests** (`tests/api`): log in as the demo accounts over HTTP and check sign-in, who-can-do-what, the listing lifecycle, viewing requests, wishlists and admin moderation. They need a running app whose database has the demo seed loaded:
+  ```bash
+  npm run build && npm start        # in one terminal
+  npm run test:api                  # in another
+  ```
+  Set `API_BASE_URL` to test a different address. Listings the tests create are deleted afterwards. Registration tests leave a few `@efiehomes.test` accounts behind; re-seeding removes them. **Never point the API tests at the live site.**
+
+**On GitHub:** `.github/workflows/ci.yml` runs on every push to `main` and on pull requests. It starts a throwaway PostgreSQL database, then typechecks, runs the unit tests, migrates and seeds, builds, starts the app and runs the API tests. Results appear on the repository's **Actions** tab and as ✓ / ✗ next to each commit.
 
 ## 5. Notes
 

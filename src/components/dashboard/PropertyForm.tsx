@@ -7,6 +7,7 @@ import { useToast } from "../ui/Toast";
 import { SafeImage } from "../ui/SafeImage";
 import { AmenityIcon } from "../AmenityIcon";
 import { ADVANCE_OPTIONS, AMENITIES, NEIGHBORHOODS, PROPERTY_TYPES, REGIONS } from "@/lib/constants";
+import { calculateUpfront } from "@/lib/pricing";
 import { fieldErrors, propertySchema } from "@/lib/validations";
 import { cn, formatCedis } from "@/lib/utils";
 
@@ -67,10 +68,16 @@ export function PropertyForm({ initial = EMPTY_PROPERTY, propertyId }: { initial
   const hoods = NEIGHBORHOODS[v.region as keyof typeof NEIGHBORHOODS] ?? [];
   const rent = Number(v.monthlyRent) || 0;
   const months = Number(v.advanceMonths) || 0;
-  const upfront = useMemo(() => {
-    const advance = rent * months;
-    return advance + Math.round((advance * (Number(v.agentFeePercent) || 0)) / 100) + (Number(v.securityDeposit) || 0);
-  }, [rent, months, v.agentFeePercent, v.securityDeposit]);
+  const upfront = useMemo(
+    () =>
+      calculateUpfront({
+        monthlyRent: rent,
+        months,
+        agentFeePercent: Number(v.agentFeePercent) || 0,
+        securityDeposit: Number(v.securityDeposit) || 0,
+      }).total,
+    [rent, months, v.agentFeePercent, v.securityDeposit],
+  );
 
   function addImage() {
     const url = imageUrl.trim();

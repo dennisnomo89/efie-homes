@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Calculator, Info } from "lucide-react";
 import { ADVANCE_OPTIONS } from "@/lib/constants";
+import { calculateUpfront } from "@/lib/pricing";
 import { cn, formatCedis } from "@/lib/utils";
 
 type Props = {
@@ -17,12 +18,10 @@ export function AdvanceCalculator({ monthlyRent, minAdvanceMonths, securityDepos
   const options = ADVANCE_OPTIONS.filter((o) => o.months >= minAdvanceMonths);
   const [months, setMonths] = useState<number>(options[0]?.months ?? minAdvanceMonths);
 
-  const breakdown = useMemo(() => {
-    const advance = monthlyRent * months;
-    const agentFee = Math.round((advance * agentFeePercent) / 100);
-    const total = advance + agentFee + securityDeposit;
-    return { advance, agentFee, total };
-  }, [monthlyRent, months, agentFeePercent, securityDeposit]);
+  const breakdown = useMemo(
+    () => calculateUpfront({ monthlyRent, months, agentFeePercent, securityDeposit }),
+    [monthlyRent, months, agentFeePercent, securityDeposit],
+  );
 
   return (
     <div className="rounded-2xl border border-gold-300 bg-gold-100/50 p-4 sm:p-5">

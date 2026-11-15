@@ -17,11 +17,15 @@ import { PropertyCard } from "@/components/PropertyCard";
 import { SafeImage } from "@/components/ui/SafeImage";
 import { getSession } from "@/lib/auth";
 import { POPULAR_NEIGHBORHOODS, PROPERTY_TYPES } from "@/lib/constants";
+import { calculateUpfront } from "@/lib/pricing";
 import { prisma } from "@/lib/prisma";
 import { getSavedIds, landlordSelect, toView } from "@/lib/properties";
 import { favoriteModeFor, formatCedis } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
+
+const EXAMPLE = { monthlyRent: 3800, months: 12, agentFeePercent: 10, securityDeposit: 0 };
+const exampleCost = calculateUpfront(EXAMPLE);
 
 export default async function HomePage() {
   const session = await getSession();
@@ -189,12 +193,12 @@ export default async function HomePage() {
                 <Calculator className="h-5 w-5" /> Example: 2-bedroom in Spintex
               </div>
               <dl className="mt-5 space-y-3 text-sm">
-                <Row label="Monthly rent" value={formatCedis(3800)} />
-                <Row label="1 Year Advance (12 × ₵3,800)" value={formatCedis(45600)} />
-                <Row label="Agent commission (10%)" value={formatCedis(4560)} />
-                <Row label="Security deposit" value={formatCedis(0)} />
+                <Row label="Monthly rent" value={formatCedis(EXAMPLE.monthlyRent)} />
+                <Row label={`1 Year Advance (12 × ${formatCedis(EXAMPLE.monthlyRent)})`} value={formatCedis(exampleCost.advance)} />
+                <Row label={`Agent commission (${EXAMPLE.agentFeePercent}%)`} value={formatCedis(exampleCost.agentFee)} />
+                <Row label="Security deposit" value={formatCedis(exampleCost.securityDeposit)} />
                 <div className="border-t border-dashed border-stone-300 pt-3">
-                  <Row label="Total to move in" value={formatCedis(50160)} strong />
+                  <Row label="Total to move in" value={formatCedis(exampleCost.total)} strong />
                 </div>
               </dl>
             </div>
