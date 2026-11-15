@@ -36,6 +36,8 @@ export default async function EditPropertyPage({ params }: Props) {
     images: parseJsonArray(p.images),
     amenities: parseJsonArray(p.amenities),
     status: p.status === "RENTED" ? "RENTED" : "AVAILABLE",
+    latitude: p.latitude,
+    longitude: p.longitude,
   };
 
   return (

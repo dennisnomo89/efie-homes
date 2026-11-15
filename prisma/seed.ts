@@ -6,6 +6,7 @@
  */
 import type { Property } from "../src/generated/prisma/client";
 import { prisma } from "../src/lib/prisma";
+import { NEIGHBORHOOD_CENTERS } from "../src/lib/constants";
 import bcrypt from "bcryptjs";
 
 
@@ -476,6 +477,18 @@ const properties: SeedProperty[] = [
   },
 ];
 
+/** Demo pin: the neighbourhood centre plus a small fixed offset so nearby listings don't overlap. */
+function pinFor(neighborhood: string, index: number) {
+  const centre = NEIGHBORHOOD_CENTERS[neighborhood];
+  if (!centre) return {};
+  const angle = (index * 137.5 * Math.PI) / 180; // golden-angle spread
+  const r = 0.002 + (index % 3) * 0.0015; // ~200-500 m
+  return {
+    latitude: Number((centre[0] + r * Math.sin(angle)).toFixed(6)),
+    longitude: Number((centre[1] + r * Math.cos(angle)).toFixed(6)),
+  };
+}
+
 function daysFromNow(days: number) {
   const d = new Date();
   d.setUTCHours(0, 0, 0, 0);
@@ -529,6 +542,7 @@ async function main() {
           images: JSON.stringify(images),
           amenities: JSON.stringify(amenities),
           landlordId: landlords[landlord].id,
+          ...pinFor(data.neighborhood, created.length),
           createdAt,
         },
       }),

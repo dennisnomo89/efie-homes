@@ -135,3 +135,51 @@ export function advanceLabel(months: number): string {
 
 /** Seeded demo accounts all use this email domain (see prisma/seed.ts). */
 export const DEMO_EMAIL_DOMAIN = "@efiehomes.test";
+
+/** Rough bounding box of Ghana, used to validate map pins. */
+export const GHANA_BOUNDS = { minLat: 4.5, maxLat: 11.25, minLng: -3.3, maxLng: 1.3 } as const;
+
+/** Approximate centres of the suggested neighbourhoods (for map defaults and demo data). */
+export const NEIGHBORHOOD_CENTERS: Record<string, [number, number]> = {
+  "East Legon": [5.637, -0.161],
+  Osu: [5.556, -0.182],
+  Cantonments: [5.579, -0.173],
+  "Airport Residential": [5.603, -0.18],
+  Labone: [5.566, -0.17],
+  Dzorwulu: [5.607, -0.201],
+  Spintex: [5.63, -0.118],
+  Tema: [5.73, -0.01],
+  Adenta: [5.709, -0.155],
+  Madina: [5.683, -0.165],
+  Haatso: [5.672, -0.205],
+  Achimota: [5.62, -0.231],
+  Dansoman: [5.548, -0.264],
+  "Trasacco Valley": [5.662, -0.134],
+  "North Legon": [5.675, -0.198],
+  "Kumasi - Ahodwo": [6.661, -1.623],
+  "Kumasi - Nhyiaeso": [6.68, -1.637],
+  "Kumasi - Danyame": [6.672, -1.632],
+  "Kumasi - Asokwa": [6.674, -1.596],
+  "Kumasi - Bantama": [6.705, -1.638],
+  "Kumasi - Atasomanso": [6.636, -1.639],
+  "Kumasi - Kwadaso": [6.693, -1.668],
+  Takoradi: [4.893, -1.75],
+  Anaji: [4.93, -1.78],
+  Sekondi: [4.938, -1.706],
+  "Cape Coast": [5.106, -1.247],
+  Kasoa: [5.534, -0.418],
+  Koforidua: [6.094, -0.257],
+  Tamale: [9.403, -0.843],
+  Ho: [6.601, 0.47],
+};
+
+/** Map centre per region when a listing has no neighbourhood match. */
+export const REGION_CENTERS: Partial<Record<string, [number, number]>> = {
+  "Greater Accra": [5.614, -0.205],
+  Ashanti: [6.688, -1.624],
+  Western: [4.9, -1.76],
+  Central: [5.106, -1.247],
+  Eastern: [6.094, -0.257],
+  Northern: [9.403, -0.843],
+  Volta: [6.601, 0.47],
+};

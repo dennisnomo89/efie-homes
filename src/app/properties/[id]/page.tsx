@@ -19,6 +19,7 @@ import { AdvanceCalculator } from "@/components/AdvanceCalculator";
 import { AmenityIcon } from "@/components/AmenityIcon";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { ImageGallery } from "@/components/ImageGallery";
+import { AreaMapLoader } from "@/components/map/MapLoaders";
 import { PropertyCard } from "@/components/PropertyCard";
 import { ScheduleViewingModal } from "@/components/ScheduleViewingModal";
 import { getCurrentUser } from "@/lib/auth";
@@ -143,6 +144,19 @@ export default async function PropertyDetailPage({ params }: Props) {
               })}
             </ul>
           </section>
+
+          {property.latitude !== null && property.longitude !== null && (
+            <section className="mt-10">
+              <h2 className="text-xl font-semibold">Location</h2>
+              <div className="mt-4 h-72 overflow-hidden rounded-2xl border border-stone-200">
+                <AreaMapLoader lat={property.latitude} lng={property.longitude} />
+              </div>
+              <p className="mt-2 text-sm text-stone-600">
+                The shaded circle shows the approximate area in {property.neighborhood}. The landlord shares exact directions when your
+                viewing is confirmed.
+              </p>
+            </section>
+          )}
 
           <section className="mt-10">
             <h2 className="text-xl font-semibold">Rental terms</h2>

@@ -7,7 +7,8 @@ import { useToast } from "../ui/Toast";
 import { SafeImage } from "../ui/SafeImage";
 import { AmenityIcon } from "../AmenityIcon";
 import { PhotoUploader } from "./PhotoUploader";
-import { ADVANCE_OPTIONS, AMENITIES, NEIGHBORHOODS, PROPERTY_TYPES, REGIONS } from "@/lib/constants";
+import { ADVANCE_OPTIONS, AMENITIES, NEIGHBORHOOD_CENTERS, NEIGHBORHOODS, PROPERTY_TYPES, REGION_CENTERS, REGIONS } from "@/lib/constants";
+import { LocationPickerLoader } from "../map/MapLoaders";
 import { calculateUpfront } from "@/lib/pricing";
 import { fieldErrors, propertySchema } from "@/lib/validations";
 import { cn, formatCedis } from "@/lib/utils";
@@ -30,6 +31,8 @@ export type PropertyFormValues = {
   images: string[];
   amenities: string[];
   status: "AVAILABLE" | "RENTED";
+  latitude: number | null;
+  longitude: number | null;
 };
 
 export const EMPTY_PROPERTY: PropertyFormValues = {
@@ -50,6 +53,8 @@ export const EMPTY_PROPERTY: PropertyFormValues = {
   images: [],
   amenities: ["ECG_PREPAID"],
   status: "AVAILABLE",
+  latitude: null,
+  longitude: null,
 };
 
 export function PropertyForm({
@@ -208,6 +213,42 @@ export function PropertyForm({
           <Field id="address" label="Street / landmark" error={errors.address}>
             <input id="f-address" value={v.address} onChange={(e) => set("address", e.target.value)} className={cn("input", errors.address && "input-error")} placeholder="e.g. Off Lagos Avenue, near Shell filling station" />
           </Field>
+          <div id="f-latitude">
+            <div className="mb-1.5 flex items-center justify-between gap-3">
+              <span className="label mb-0">Map pin (optional)</span>
+              {v.latitude !== null && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setV((s) => ({ ...s, latitude: null, longitude: null }));
+                    setErrors((e) => ({ ...e, latitude: "" }));
+                  }}
+                  className="text-xs font-semibold text-red-600 hover:underline"
+                >
+                  Remove pin
+                </button>
+              )}
+            </div>
+            <div className={cn("h-72 overflow-hidden rounded-xl border", errors.latitude ? "border-red-400" : "border-stone-300")}>
+              <LocationPickerLoader
+                value={v.latitude !== null && v.longitude !== null ? { lat: v.latitude, lng: v.longitude } : null}
+                center={NEIGHBORHOOD_CENTERS[v.neighborhood.trim()] ?? REGION_CENTERS[v.region] ?? REGION_CENTERS["Greater Accra"]!}
+                onChange={(p) => {
+                  setV((s) => ({ ...s, latitude: p.lat, longitude: p.lng }));
+                  setErrors((e) => ({ ...e, latitude: "" }));
+                }}
+              />
+            </div>
+            {errors.latitude ? (
+              <p className="field-error">{errors.latitude}</p>
+            ) : (
+              <p className="mt-1.5 text-xs text-stone-500">
+                {v.latitude !== null
+                  ? "Pin placed. Drag it to adjust. Tenants only see the approximate area (about 300 m), never the exact spot."
+                  : "Tap the map where the property is so it appears in the map search. Tenants only see the approximate area."}
+              </p>
+            )}
+          </div>
         </Card>
 
         <Card title="Rent & advance" subtitle="All amounts in Ghana Cedis (GHS).">

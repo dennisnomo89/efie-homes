@@ -4,6 +4,7 @@ import {
   AMENITY_VALUES,
   PROPERTY_STATUSES,
   PROPERTY_TYPE_VALUES,
+  GHANA_BOUNDS,
   REGIONS,
   VIEWING_TIME_SLOTS,
 } from "./constants";
@@ -92,6 +93,18 @@ export const propertySchema = z.object({
     .max(12, "You can add up to 12 images"),
   amenities: z.array(z.enum(AMENITY_VALUES)).max(AMENITY_VALUES.length, "Choose each amenity only once").default([]),
   status: z.enum(PROPERTY_STATUSES).default("AVAILABLE"),
+  latitude: z.number({ error: "Pin a valid location" }).finite().nullable().default(null),
+  longitude: z.number({ error: "Pin a valid location" }).finite().nullable().default(null),
+}).superRefine((v, ctx) => {
+  if ((v.latitude === null) !== (v.longitude === null)) {
+    ctx.addIssue({ code: "custom", path: ["latitude"], message: "Set both latitude and longitude, or neither" });
+    return;
+  }
+  if (v.latitude === null || v.longitude === null) return;
+  const b = GHANA_BOUNDS;
+  if (v.latitude < b.minLat || v.latitude > b.maxLat || v.longitude < b.minLng || v.longitude > b.maxLng) {
+    ctx.addIssue({ code: "custom", path: ["latitude"], message: "Place the pin inside Ghana" });
+  }
 });
 export type PropertyInput = z.input<typeof propertySchema>;
 export type PropertyData = z.output<typeof propertySchema>;

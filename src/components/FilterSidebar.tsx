@@ -74,6 +74,7 @@ export function FilterSidebar() {
     if (next.amenities.length) q.set("amenities", next.amenities.join(","));
     if (next.furnished) q.set("furnished", "true");
     if (sort) q.set("sort", sort);
+    if (sp.get("view") === "map") q.set("view", "map"); // stay on the map when filtering
     setOpen(false);
     startTransition(() => router.push(`/properties${q.toString() ? `?${q}` : ""}`, { scroll: false }));
   }

@@ -108,3 +108,20 @@
     display: none;
   }
 }
+
+/* ---------- Map markers (Leaflet) ---------- */
+@layer components {
+  .efie-price-pin {
+    @apply inline-flex -translate-x-0 items-center whitespace-nowrap rounded-full border-2 border-white bg-forest-800 px-2.5 py-1 font-sans text-xs font-bold text-white shadow-lift transition hover:scale-110 hover:bg-terracotta-500;
+  }
+  .efie-pick-pin {
+    @apply block h-7 w-7 rounded-full rounded-br-none border-[3px] border-white bg-terracotta-500 shadow-lift;
+    transform: rotate(45deg);
+  }
+  .leaflet-container {
+    @apply font-sans;
+  }
+  .leaflet-popup-content-wrapper {
+    @apply rounded-2xl;
+  }
+}

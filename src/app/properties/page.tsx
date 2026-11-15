@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, SearchX, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, List, Map as MapIcon, SearchX, X } from "lucide-react";
 import { FilterSidebar } from "@/components/FilterSidebar";
+import { ListingsMapLoader } from "@/components/map/MapLoaders";
 import { PropertyCard } from "@/components/PropertyCard";
 import { SortSelect } from "@/components/SortSelect";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { getSession } from "@/lib/auth";
 import { advanceLabel, amenityLabel, propertyTypeLabel } from "@/lib/constants";
-import { filtersToQuery, getSavedIds, parseFilters, searchProperties, type PropertyFilters } from "@/lib/properties";
+import { filtersToQuery, getSavedIds, parseFilters, searchMapPins, searchProperties, type PropertyFilters } from "@/lib/properties";
 import { cn, favoriteModeFor, formatCedis } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Rentals across Ghana" };
@@ -17,12 +18,20 @@ type Props = { searchParams: Promise<Record<string, string | string[] | undefine
 export default async function PropertiesPage({ searchParams }: Props) {
   const params = await searchParams;
   const filters = parseFilters(params);
+  const isMap = params.view === "map";
   const session = await getSession();
-  const [{ properties, total, page, pageCount }, savedIds] = await Promise.all([searchProperties(filters), getSavedIds(session?.sub)]);
+  const [{ properties, total, page, pageCount }, savedIds, map] = await Promise.all([
+    searchProperties(filters),
+    getSavedIds(session?.sub),
+    isMap ? searchMapPins(filters) : Promise.resolve(null),
+  ]);
   const favoriteMode = favoriteModeFor(session?.role);
 
   const heading = filters.location ?? filters.region ?? "Ghana";
   const pills = activePills(filters);
+  const viewExtra = isMap ? { view: "map" } : {};
+  const listHref = `/properties${filtersToQuery({ ...filters, page: 1 })}`;
+  const mapHref = `/properties${filtersToQuery({ ...filters, page: 1 }, { view: "map" })}`;
 
   return (
     <div className="container py-8 sm:py-10">
@@ -50,7 +59,7 @@ export default async function PropertiesPage({ searchParams }: Props) {
               {pills.map((p) => (
                 <Link
                   key={p.key}
-                  href={`/properties${filtersToQuery({ ...filters, ...p.clear, page: 1 })}`}
+                  href={`/properties${filtersToQuery({ ...filters, ...p.clear, page: 1 }, viewExtra)}`}
                   className="badge bg-forest-50 py-1.5 text-forest-800 ring-1 ring-forest-200 hover:bg-forest-100"
                   scroll={false}
                 >
@@ -58,12 +67,42 @@ export default async function PropertiesPage({ searchParams }: Props) {
                 </Link>
               ))}
             </div>
-            <div className="ml-auto w-full sm:w-56">
-              <SortSelect />
+            <div className="ml-auto flex w-full items-center gap-2 sm:w-auto">
+              <div className="flex shrink-0 rounded-xl border border-stone-300 bg-white p-1" role="tablist" aria-label="Show results as">
+                <Link href={listHref} role="tab" aria-selected={!isMap} scroll={false} className={cn("flex min-h-[36px] items-center gap-1.5 rounded-lg px-3 text-sm font-semibold", !isMap ? "bg-forest-800 text-white" : "text-stone-700 hover:bg-stone-100")}>
+                  <List className="h-4 w-4" /> List
+                </Link>
+                <Link href={mapHref} role="tab" aria-selected={isMap} scroll={false} className={cn("flex min-h-[36px] items-center gap-1.5 rounded-lg px-3 text-sm font-semibold", isMap ? "bg-forest-800 text-white" : "text-stone-700 hover:bg-stone-100")}>
+                  <MapIcon className="h-4 w-4" /> Map
+                </Link>
+              </div>
+              {!isMap && (
+                <div className="w-full sm:w-56">
+                  <SortSelect />
+                </div>
+              )}
             </div>
           </div>
 
-          {properties.length === 0 ? (
+          {map ? (
+            <div className="mt-6">
+              <div className="relative h-[70vh] min-h-[420px] overflow-hidden rounded-2xl border border-stone-200 shadow-soft">
+                <ListingsMapLoader pins={map.pins} />
+              </div>
+              <p className="mt-3 text-sm text-stone-600">
+                {map.pins.length === 0
+                  ? "None of the matching homes have a map location yet."
+                  : `Showing ${map.pins.length} of ${map.total} matching ${map.total === 1 ? "home" : "homes"} on the map.`}
+                {map.unpinned > 0 && map.pins.length > 0 && ` ${map.unpinned} without a map location ${map.unpinned === 1 ? "is" : "are"} only in the `}
+                {map.unpinned > 0 && map.pins.length > 0 && (
+                  <Link href={listHref} className="font-semibold text-forest-800 hover:underline">
+                    list view
+                  </Link>
+                )}
+                {map.unpinned > 0 && map.pins.length > 0 && "."} Locations are approximate (within about 100 m).
+              </p>
+            </div>
+          ) : properties.length === 0 ? (
             <div className="mt-6">
               <EmptyState
                 icon={SearchX}
@@ -80,7 +119,7 @@ export default async function PropertiesPage({ searchParams }: Props) {
             </div>
           )}
 
-          {pageCount > 1 && (
+          {!isMap && pageCount > 1 && (
             <nav className="mt-10 flex items-center justify-center gap-2" aria-label="Pagination">
               <PageLink filters={filters} page={page - 1} disabled={page <= 1} label="Previous">
                 <ChevronLeft className="h-4 w-4" />

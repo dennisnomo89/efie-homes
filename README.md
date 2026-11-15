@@ -78,7 +78,7 @@ Every push to `main` then redeploys automatically.
 | `npm test` | Unit tests (no database needed) |
 | `npm run test:api` | API tests against a running app (see Testing) |
 | `npm run make-admin -- <email>` | Promote an account to admin in the `.env` database |
-| `npm run db:migrate` | `prisma migrate dev` + `prisma generate` (create a migration after schema changes) |
+| `npm run db:migrate -- --name <change>` | `prisma migrate dev`, then `prisma generate` (create a migration after schema changes) |
 | `npm run db:deploy` | `prisma migrate deploy` (apply migrations) |
 | `npm run db:seed` | Re-run `prisma/seed.ts` (wipes and reloads demo data) |
 | `npm run db:reset` | Drop, re-migrate and re-seed |
@@ -218,6 +218,14 @@ Emails are sent after the response (`after()` from `next/server`), so a slow or 
 4. Optional: set `APP_URL` if the site has its own domain; otherwise links use Vercel's production domain.
 
 Known limitation: resetting a password doesn't sign out sessions that are already logged in elsewhere (sessions are stateless 7-day tokens).
+
+## Map view
+
+- **Listings page:** a **List / Map** switch (`?view=map`). The map shows matching homes as price tags with a preview card; all filters apply. Data comes from `GET /api/properties/map` (up to 300 pins).
+- **Listing page:** an "approximate area" map (300 m circle).
+- **Listing form:** landlords can drop and drag a pin (optional, must be inside Ghana).
+- **Privacy:** the exact pin is stored, but every public page and API response rounds it to 3 decimal places (about 110 m). Only the landlord's edit form shows the exact spot.
+- **Maps:** [Leaflet](https://leafletjs.com) with OpenStreetMap tiles (attribution shown on the map). OpenStreetMap's free tiles are fine for modest traffic; if Efie Homes grows large, switch the tile URL in `src/components/map/ListingsMap.tsx` to a hosted provider (e.g. MapTiler, Stadia or Carto) per [OSM's tile usage policy](https://operations.osmfoundation.org/policies/tiles/).
 
 ## Messages and photo uploads
 

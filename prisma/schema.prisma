@@ -52,6 +52,9 @@ model Property {
   /// Suburb / neighbourhood, e.g. "East Legon"
   neighborhood    String
   address         String
+  /// Exact map pin set by the landlord (optional). Shown to the public rounded to ~100 m.
+  latitude        Float?
+  longitude       Float?
   /// Monthly rent in whole Ghana Cedis
   monthlyRent     Int
   /// Minimum advance the landlord requires, in months (6, 12 or 24)

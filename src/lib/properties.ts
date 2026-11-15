@@ -108,11 +108,67 @@ export type PropertyView = Omit<Property, "images" | "amenities"> & {
   landlord?: Pick<User, "id" | "name" | "isVerified" | "avatarUrl" | "role">;
 };
 
+/** Public precision for map pins: 3 decimal places ≈ 110 m, enough to show the area but not the house. */
+export function roundCoord(value: number | null): number | null {
+  return value === null ? null : Math.round(value * 1000) / 1000;
+}
+
+/**
+ * Shapes a listing for display and API responses. Coordinates are always rounded here;
+ * only the owner's edit form (which reads the database directly) sees the exact pin.
+ */
 export function toView<T extends Property>(p: T): Omit<T, "images" | "amenities"> & { images: string[]; amenities: Amenity[] } {
   return {
     ...p,
+    latitude: roundCoord(p.latitude),
+    longitude: roundCoord(p.longitude),
     images: parseJsonArray(p.images),
     amenities: parseJsonArray(p.amenities) as Amenity[],
+  };
+}
+
+export type MapPin = {
+  id: string;
+  title: string;
+  monthlyRent: number;
+  neighborhood: string;
+  propertyType: string;
+  bedrooms: number;
+  image: string | null;
+  lat: number;
+  lng: number;
+};
+
+export const MAP_PIN_LIMIT = 300;
+
+/** Listings matching the filters that have a map pin (rounded), for the map view. */
+export async function searchMapPins(f: PropertyFilters): Promise<{ pins: MapPin[]; total: number; unpinned: number }> {
+  const where = buildWhere(f);
+  const pinned: Prisma.PropertyWhereInput = { AND: [where, { latitude: { not: null } }, { longitude: { not: null } }] };
+  const [rows, total, pinnedCount] = await Promise.all([
+    prisma.property.findMany({
+      where: pinned,
+      orderBy: buildOrderBy(f.sort),
+      take: MAP_PIN_LIMIT,
+      select: { id: true, title: true, monthlyRent: true, neighborhood: true, propertyType: true, bedrooms: true, images: true, latitude: true, longitude: true },
+    }),
+    prisma.property.count({ where }),
+    prisma.property.count({ where: pinned }),
+  ]);
+  return {
+    total,
+    unpinned: total - pinnedCount,
+    pins: rows.map((r) => ({
+      id: r.id,
+      title: r.title,
+      monthlyRent: r.monthlyRent,
+      neighborhood: r.neighborhood,
+      propertyType: r.propertyType,
+      bedrooms: r.bedrooms,
+      image: parseJsonArray(r.images)[0] ?? null,
+      lat: roundCoord(r.latitude)!,
+      lng: roundCoord(r.longitude)!,
+    })),
   };
 }
 
