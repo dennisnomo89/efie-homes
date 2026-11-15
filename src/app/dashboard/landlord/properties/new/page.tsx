@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { PropertyForm } from "@/components/dashboard/PropertyForm";
 import { requireUser } from "@/lib/auth";
+import { uploadsMode } from "@/lib/uploads";
 
 export const metadata: Metadata = { title: "New listing" };
 
@@ -15,7 +16,7 @@ export default async function NewPropertyPage() {
       </Link>
       <h2 className="mt-2 font-display text-2xl font-semibold">Create a new listing</h2>
       <p className="mb-6 text-sm text-stone-600">It takes about 3 minutes. Your listing goes live as soon as you publish.</p>
-      <PropertyForm />
+      <PropertyForm uploadsEnabled={uploadsMode() !== "off"} />
     </div>
   );
 }

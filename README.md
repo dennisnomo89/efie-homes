@@ -219,6 +219,20 @@ Emails are sent after the response (`after()` from `next/server`), so a slow or 
 
 Known limitation: resetting a password doesn't sign out sessions that are already logged in elsewhere (sessions are stateless 7-day tokens).
 
+## Messages and photo uploads
+
+**Messages.** Each viewing request has a private thread between the tenant and that listing's landlord (`/api/viewings/:id/messages`). Admins can read threads for moderation but not post. The other person gets an email for a new message, at most one per burst while earlier messages are unread. Limits: 2,000 characters per message, 30 messages per person per thread per 10 minutes.
+
+**Photo uploads.** Landlords can upload JPEG, PNG or WebP photos from the listing form. The browser shrinks them (longest side 1,600 px) before upload; the server checks the file's actual contents and caps uploads at 4 MB.
+
+Where photos are stored (`src/lib/uploads.ts`):
+
+1. `BLOB_READ_WRITE_TOKEN` set → [Vercel Blob](https://vercel.com/docs/vercel-blob).
+2. Otherwise, `UPLOADS_DIR` set → a local folder, served from `/api/uploads/:name` (development and tests only).
+3. Otherwise → uploads are off and the button is hidden; pasting image links still works.
+
+**Turning on uploads on Vercel:** in your Vercel project open **Storage → Create Database → Blob**, create the store and connect it to the project (all environments). Vercel adds `BLOB_READ_WRITE_TOKEN` automatically; redeploy. The free tier is enough to start.
+
 ## Testing
 
 Tests use [Vitest](https://vitest.dev) and live in `tests/`.
@@ -232,7 +246,7 @@ Tests use [Vitest](https://vitest.dev) and live in `tests/`.
   npm run build && npm start        # in one terminal
   npm run test:api                  # in another
   ```
-  To include the email tests, start the server and run the tests with `EMAIL_OUTBOX_DIR=.email-outbox` (and no `RESEND_API_KEY`); otherwise they're skipped. Set `API_BASE_URL` to test a different address. Listings the tests create are deleted afterwards. Registration tests leave a few `@efiehomes.test` accounts behind; re-seeding removes them. **Never point the API tests at the live site.**
+  To include the email and upload tests, start the server and run the tests with `EMAIL_OUTBOX_DIR=.email-outbox UPLOADS_DIR=.uploads` (and without `RESEND_API_KEY` or `BLOB_READ_WRITE_TOKEN`); otherwise they're skipped. Set `API_BASE_URL` to test a different address. Listings the tests create are deleted afterwards. Registration tests leave a few `@efiehomes.test` accounts behind; re-seeding removes them. **Never point the API tests at the live site.**
 
 **On GitHub:** `.github/workflows/ci.yml` runs on every push to `main` and on pull requests. It starts a throwaway PostgreSQL database, then typechecks, runs the unit tests, migrates and seeds, builds, starts the app and runs the API tests. Results appear on the repository's **Actions** tab and as ✓ / ✗ next to each commit.
 

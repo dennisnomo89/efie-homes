@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { PropertyForm, type PropertyFormValues } from "@/components/dashboard/PropertyForm";
 import { requireUser } from "@/lib/auth";
+import { uploadsMode } from "@/lib/uploads";
 import { prisma } from "@/lib/prisma";
 import { parseJsonArray } from "@/lib/utils";
 
@@ -44,7 +45,7 @@ export default async function EditPropertyPage({ params }: Props) {
       </Link>
       <h2 className="mt-2 font-display text-2xl font-semibold">Edit listing</h2>
       <p className="mb-6 line-clamp-1 text-sm text-stone-600">{p.title}</p>
-      <PropertyForm initial={initial} propertyId={p.id} />
+      <PropertyForm initial={initial} propertyId={p.id} uploadsEnabled={uploadsMode() !== "off"} />
     </div>
   );
 }

@@ -41,6 +41,8 @@ jobs:
       NEXT_TELEMETRY_DISABLED: "1"
       # Emails are written here instead of being sent; the API tests read them back.
       EMAIL_OUTBOX_DIR: .email-outbox
+      # Uploaded photos are stored in this folder instead of Vercel Blob.
+      UPLOADS_DIR: .uploads
 
     steps:
       - uses: actions/checkout@v4

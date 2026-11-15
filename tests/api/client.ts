@@ -9,16 +9,18 @@ export class Client {
   private cookie = "";
 
   async request<T = any>(method: string, path: string, body?: unknown, init: RequestInit = {}): Promise<Res<T>> {
+    const isForm = body instanceof FormData;
     const res = await fetch(BASE_URL + path, {
       method,
       redirect: "manual",
       ...init,
       headers: {
-        ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
+        // FormData sets its own multipart Content-Type (with boundary).
+        ...(body !== undefined && !isForm ? { "Content-Type": "application/json" } : {}),
         ...(this.cookie ? { Cookie: this.cookie } : {}),
         ...(init.headers ?? {}),
       },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
     });
     for (const c of res.headers.getSetCookie()) {
       const [pair] = c.split(";");

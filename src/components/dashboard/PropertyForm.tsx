@@ -6,6 +6,7 @@ import { ArrowDown, ArrowUp, ImagePlus, Loader2, Save, Trash2 } from "lucide-rea
 import { useToast } from "../ui/Toast";
 import { SafeImage } from "../ui/SafeImage";
 import { AmenityIcon } from "../AmenityIcon";
+import { PhotoUploader } from "./PhotoUploader";
 import { ADVANCE_OPTIONS, AMENITIES, NEIGHBORHOODS, PROPERTY_TYPES, REGIONS } from "@/lib/constants";
 import { calculateUpfront } from "@/lib/pricing";
 import { fieldErrors, propertySchema } from "@/lib/validations";
@@ -51,7 +52,15 @@ export const EMPTY_PROPERTY: PropertyFormValues = {
   status: "AVAILABLE",
 };
 
-export function PropertyForm({ initial = EMPTY_PROPERTY, propertyId }: { initial?: PropertyFormValues; propertyId?: string }) {
+export function PropertyForm({
+  initial = EMPTY_PROPERTY,
+  propertyId,
+  uploadsEnabled = false,
+}: {
+  initial?: PropertyFormValues;
+  propertyId?: string;
+  uploadsEnabled?: boolean;
+}) {
   const router = useRouter();
   const { toast } = useToast();
   const [v, setV] = useState<PropertyFormValues>(initial);
@@ -244,7 +253,23 @@ export function PropertyForm({ initial = EMPTY_PROPERTY, propertyId }: { initial
           </div>
         </Card>
 
-        <Card title="Photos" subtitle="Paste direct image URLs. The first photo is the cover image.">
+        <Card
+          title="Photos"
+          subtitle={
+            uploadsEnabled
+              ? "Upload photos from your phone or computer, or paste image links. The first photo is the cover image."
+              : "Paste direct image URLs. The first photo is the cover image."
+          }
+        >
+          {uploadsEnabled && (
+            <PhotoUploader
+              remaining={12 - v.images.length}
+              onUploaded={(url) => {
+                setV((s) => (s.images.includes(url) || s.images.length >= 12 ? s : { ...s, images: [...s.images, url] }));
+                setErrors((er) => ({ ...er, images: "" }));
+              }}
+            />
+          )}
           <div className="flex gap-2">
             <input
               id="f-images"
