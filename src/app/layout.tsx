@@ -3,6 +3,7 @@ import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { CompareTray } from "@/components/compare/CompareControls";
 import { ToastProvider } from "@/components/ui/Toast";
 import { getCurrentUser } from "@/lib/auth";
 import { appUrl, SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE } from "@/lib/site";
@@ -45,6 +46,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <Navbar user={user ? { name: user.name, role: user.role, avatarUrl: user.avatarUrl } : null} />
           <main className="flex-1">{children}</main>
           <Footer />
+          <CompareTray />
         </ToastProvider>
       </body>
     </html>

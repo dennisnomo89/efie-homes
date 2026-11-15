@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Bath, BadgeCheck, BedDouble, MapPin, Ruler } from "lucide-react";
 import { FavoriteButton } from "./FavoriteButton";
+import { CompareButton } from "./compare/CompareControls";
 import { SafeImage } from "./ui/SafeImage";
 import { advanceLabel, amenityLabel, propertyTypeLabel } from "@/lib/constants";
 import type { PropertyView } from "@/lib/properties";
@@ -41,8 +42,9 @@ export function PropertyCard({ property, saved = false, favoriteMode = "unauth",
           </div>
           <FavoriteButton propertyId={property.id} initialSaved={saved} mode={favoriteMode} />
         </div>
-        <div className="absolute bottom-3 left-3">
+        <div className="absolute inset-x-3 bottom-3 flex items-end justify-between gap-2">
           <span className="badge bg-forest-900/85 text-white backdrop-blur">{advanceLabel(property.advanceMonths)}</span>
+          {!rented && <CompareButton propertyId={property.id} />}
         </div>
       </div>
 

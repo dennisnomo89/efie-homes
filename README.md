@@ -249,6 +249,12 @@ Known limitation: resetting a password doesn't sign out sessions that are alread
 - Admins can hide abusive reviews from the admin view of the landlord dashboard or the profile page; hidden reviews don't count towards averages.
 - The review keeps a copy of the listing title, so it survives the listing being deleted.
 
+## Comparing homes
+
+- Every listing card and listing page has a **Compare** button. Up to 3 homes can be picked; a tray at the bottom of the screen shows how many are picked and opens the comparison.
+- `/compare?ids=a,b,c` shows the homes side by side: rent, advance, **move-in cost** (advance + agent fee + deposit, from `calculateUpfront` in `src/lib/pricing.ts`) with the lowest marked, size, rooms, furnishing, every amenity any of them has, the landlord's rating and the listing's accuracy rating.
+- No account needed: the selection is kept in the browser (`localStorage`) and in the link, so a comparison can be shared. Hidden or deleted listings are left out with a note. The page is not indexed by search engines.
+
 ## Reporting listings
 
 - Any signed-in user can report a listing (not their own) from the link under the landlord card: looks like a scam, no longer available, wrong details, duplicate, offensive, or something else (with details). The form also reminds renters never to pay before seeing a home.

@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { AdvanceCalculator } from "@/components/AdvanceCalculator";
 import { AmenityIcon } from "@/components/AmenityIcon";
+import { CompareButton } from "@/components/compare/CompareControls";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { ImageGallery } from "@/components/ImageGallery";
 import { AreaMapLoader } from "@/components/map/MapLoaders";
@@ -241,6 +242,7 @@ export default async function PropertyDetailPage({ params }: Props) {
                     viewer={user ? { role: user.role, phone: user.phone, name: user.name } : null}
                   />
                 )}
+                {!property.isHidden && !rented && <CompareButton propertyId={property.id} variant="full" className="mt-2 w-full" />}
               </div>
 
               {pendingRequest && (
