@@ -126,3 +126,25 @@
     @apply rounded-2xl;
   }
 }
+
+/* ---------- Long-form text (About / Terms / Privacy) ---------- */
+@layer components {
+  .content-prose {
+    @apply space-y-4 leading-relaxed text-stone-700;
+  }
+  .content-prose h2 {
+    @apply pt-6 font-display text-2xl font-semibold text-ink;
+  }
+  .content-prose h3 {
+    @apply pt-2 text-lg font-semibold text-ink;
+  }
+  .content-prose ul {
+    @apply list-disc space-y-1.5 pl-6;
+  }
+  .content-prose a {
+    @apply font-semibold text-forest-800 underline decoration-forest-300 underline-offset-2 hover:decoration-forest-800;
+  }
+  .content-prose strong {
+    @apply font-semibold text-ink;
+  }
+}

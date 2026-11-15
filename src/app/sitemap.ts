@@ -26,6 +26,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     { url: absoluteUrl("/"), lastModified: now, changeFrequency: "daily", priority: 1 },
     { url: absoluteUrl("/properties"), lastModified: now, changeFrequency: "hourly", priority: 0.9 },
+    ...["/about", "/contact", "/terms", "/privacy"].map((path) => ({
+      url: absoluteUrl(path),
+      lastModified: now,
+      changeFrequency: "monthly" as const,
+      priority: path === "/about" || path === "/contact" ? 0.5 : 0.3,
+    })),
     ...regions.map((r) => ({
       url: absoluteUrl(`/properties?region=${encodeURIComponent(r)}`),
       lastModified: now,
