@@ -33,7 +33,7 @@ export const registerSchema = z.object({
     .max(100)
     .regex(/[A-Za-z]/, "Password must contain a letter")
     .regex(/[0-9]/, "Password must contain a number"),
-  role: z.enum(["TENANT", "LANDLORD"], { errorMap: () => ({ message: "Choose an account type" }) }),
+  role: z.enum(["TENANT", "LANDLORD"], { error: "Choose an account type" }),
 });
 export type RegisterInput = z.input<typeof registerSchema>;
 
@@ -45,7 +45,7 @@ export type LoginInput = z.input<typeof loginSchema>;
 
 const wholeNumber = (label: string, min: number, max: number) =>
   z.coerce
-    .number({ invalid_type_error: `${label} must be a number` })
+    .number({ error: `${label} must be a number` })
     .int(`${label} must be a whole number`)
     .min(min, `${label} must be at least ${min.toLocaleString()}`)
     .max(max, `${label} must be at most ${max.toLocaleString()}`);
@@ -57,8 +57,8 @@ export const propertySchema = z.object({
     .trim()
     .min(40, "Describe the property in at least 40 characters")
     .max(5000, "Description is too long"),
-  propertyType: z.enum(PROPERTY_TYPE_VALUES, { errorMap: () => ({ message: "Choose a property type" }) }),
-  region: z.enum(REGIONS, { errorMap: () => ({ message: "Choose a region" }) }),
+  propertyType: z.enum(PROPERTY_TYPE_VALUES, { error: "Choose a property type" }),
+  region: z.enum(REGIONS, { error: "Choose a region" }),
   neighborhood: z.string().trim().min(2, "Enter the neighbourhood").max(80),
   address: z.string().trim().min(3, "Enter a street or landmark address").max(160),
   monthlyRent: wholeNumber("Monthly rent", 100, 2_000_000),
@@ -78,7 +78,7 @@ export const propertySchema = z.object({
     .array(z.string().trim().url("Each image must be a valid URL").max(1000))
     .min(1, "Add at least one image URL")
     .max(12, "You can add up to 12 images"),
-  amenities: z.array(z.enum(AMENITY_VALUES)).max(AMENITY_VALUES.length).default([]),
+  amenities: z.array(z.enum(AMENITY_VALUES)).max(AMENITY_VALUES.length, "Choose each amenity only once").default([]),
   status: z.enum(PROPERTY_STATUSES).default("AVAILABLE"),
 });
 export type PropertyInput = z.input<typeof propertySchema>;
@@ -107,7 +107,7 @@ export const viewingRequestSchema = z.object({
       { message: "Viewings can be booked up to 90 days ahead" },
     ),
   preferredTime: z.enum(VIEWING_TIME_SLOTS as [string, ...string[]], {
-    errorMap: () => ({ message: "Pick a time slot" }),
+    error: "Pick a time slot",
   }),
   phone: ghanaPhone,
   message: z.string().trim().min(10, "Add a short message (at least 10 characters)").max(1000),
