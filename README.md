@@ -227,6 +227,14 @@ Known limitation: resetting a password doesn't sign out sessions that are alread
 - **Privacy:** the exact pin is stored, but every public page and API response rounds it to 3 decimal places (about 110 m). Only the landlord's edit form shows the exact spot.
 - **Maps:** [Leaflet](https://leafletjs.com) with OpenStreetMap tiles (attribution shown on the map). OpenStreetMap's free tiles are fine for modest traffic; if Efie Homes grows large, switch the tile URL in `src/components/map/ListingsMap.tsx` to a hosted provider (e.g. MapTiler, Stadia or Carto) per [OSM's tile usage policy](https://operations.osmfoundation.org/policies/tiles/).
 
+## Saved searches & alerts
+
+- Tenants tap **Save search** on the listings page to save the current filters (page, sort and map view are ignored). Up to 10 per tenant; saving the same search twice is a no-op. Names are generated, e.g. "2 Bedroom Apartment · 2+ beds · East Legon · up to ₵ 4,000".
+- When a landlord publishes a listing, every saved search with alerts on is checked (`listingMatches` in `src/lib/saved-searches.ts`, kept in step with the search page's `buildWhere` by a unit test). Matching tenants get an email, **at most one per saved search every 3 hours**; the dashboard shows every new match ("3 new"), counted since the tenant last opened that search.
+- Each alert includes a signed one-click unsubscribe link (no login needed) and `List-Unsubscribe` headers, so Gmail/Outlook show their own unsubscribe button.
+- API: `GET/POST /api/saved-searches`, `PATCH/DELETE /api/saved-searches/:id`, `GET /api/saved-searches/:id/open`, `GET|POST /api/saved-searches/:id/unsubscribe?token=…`.
+- Scale note: matching loads all searches with alerts on each time a listing is published. That's fine for thousands of saved searches; beyond that, move matching to a background job.
+
 ## Search engines & sharing
 
 - **`/sitemap.xml`** (`src/app/sitemap.ts`): home, listings page, region and property-type landing pages that currently have homes, and every public, available listing. Hidden and rented listings are left out. Built on request, so new listings appear without a redeploy.

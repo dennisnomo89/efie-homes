@@ -204,3 +204,15 @@ export const messageSchema = z.object({
     .min(1, "Write a message first")
     .max(MESSAGE_MAX_LENGTH, `Keep messages under ${MESSAGE_MAX_LENGTH.toLocaleString()} characters`),
 });
+
+export const savedSearchCreateSchema = z.object({
+  /** The listings page query string, e.g. "location=Osu&bedrooms=2" (a leading "?" is fine) */
+  query: z.string().max(1000, "That search is too long"),
+});
+
+export const savedSearchUpdateSchema = z
+  .object({
+    emailAlerts: z.boolean().optional(),
+    name: z.string().trim().min(1, "Give the search a name").max(100, "Keep the name under 100 characters").optional(),
+  })
+  .refine((v) => v.emailAlerts !== undefined || v.name !== undefined, { message: "Nothing to update" });

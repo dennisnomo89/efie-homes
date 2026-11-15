@@ -4,9 +4,11 @@ import { ChevronLeft, ChevronRight, List, Map as MapIcon, SearchX, X } from "luc
 import { FilterSidebar } from "@/components/FilterSidebar";
 import { ListingsMapLoader } from "@/components/map/MapLoaders";
 import { PropertyCard } from "@/components/PropertyCard";
+import { SaveSearchButton } from "@/components/SaveSearchButton";
 import { SortSelect } from "@/components/SortSelect";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { getSession } from "@/lib/auth";
+import { hasCriteria } from "@/lib/saved-searches";
 import { advanceLabel, amenityLabel, propertyTypeLabel } from "@/lib/constants";
 import { filtersToQuery, getSavedIds, parseFilters, searchMapPins, searchProperties, type PropertyFilters } from "@/lib/properties";
 import { cn, favoriteModeFor, formatCedis } from "@/lib/utils";
@@ -93,7 +95,7 @@ export default async function PropertiesPage({ searchParams }: Props) {
                 </Link>
               ))}
             </div>
-            <div className="ml-auto flex w-full items-center gap-2 sm:w-auto">
+            <div className="ml-auto flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
               <div className="flex shrink-0 rounded-xl border border-stone-300 bg-white p-1" role="tablist" aria-label="Show results as">
                 <Link href={listHref} role="tab" aria-selected={!isMap} scroll={false} className={cn("flex min-h-[36px] items-center gap-1.5 rounded-lg px-3 text-sm font-semibold", !isMap ? "bg-forest-800 text-white" : "text-stone-700 hover:bg-stone-100")}>
                   <List className="h-4 w-4" /> List
@@ -102,6 +104,7 @@ export default async function PropertiesPage({ searchParams }: Props) {
                   <MapIcon className="h-4 w-4" /> Map
                 </Link>
               </div>
+              <SaveSearchButton mode={!session ? "unauth" : session.role === "TENANT" ? "tenant" : "landlord"} hasFilters={hasCriteria(filters)} />
               {!isMap && (
                 <div className="w-full sm:w-56">
                   <SortSelect />

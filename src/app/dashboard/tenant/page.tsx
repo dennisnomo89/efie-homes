@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CalendarCheck, CalendarDays, Clock, Heart, MapPin, MessageSquareText, Phone } from "lucide-react";
+import { BellPlus, CalendarCheck, CalendarDays, Clock, Heart, MapPin, MessageSquareText, Phone } from "lucide-react";
 import { CancelViewingButton } from "@/components/dashboard/CancelViewingButton";
 import { MessageThread } from "@/components/dashboard/MessageThread";
+import { SavedSearchActions } from "@/components/dashboard/SavedSearchActions";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
 import { PropertyCard } from "@/components/PropertyCard";
@@ -10,6 +11,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { SafeImage } from "@/components/ui/SafeImage";
 import { requireUser } from "@/lib/auth";
 import { messageTotals, unreadCounts } from "@/lib/messages";
+import { savedSearchesWithCounts } from "@/lib/saved-searches";
 import { prisma } from "@/lib/prisma";
 import { landlordSelect, toView } from "@/lib/properties";
 import { formatCedis, formatDate, formatTime, parseJsonArray } from "@/lib/utils";
@@ -49,7 +51,11 @@ export default async function TenantDashboard({ searchParams }: Props) {
 
   const count = (s: string) => viewings.filter((v) => v.status === s).length;
   const viewingIds = viewings.map((v) => v.id);
-  const [unread, totals] = await Promise.all([unreadCounts(user.id, viewingIds), messageTotals(viewingIds)]);
+  const [unread, totals, searches] = await Promise.all([
+    unreadCounts(user.id, viewingIds),
+    messageTotals(viewingIds),
+    savedSearchesWithCounts(user.id),
+  ]);
 
   return (
     <div className="space-y-12">
@@ -125,6 +131,49 @@ export default async function TenantDashboard({ searchParams }: Props) {
                 </li>
               );
             })}
+          </ul>
+        )}
+      </section>
+
+      <section id="searches" className="scroll-mt-24">
+        <h2 className="text-xl font-semibold">Saved searches</h2>
+        <p className="text-sm text-stone-600">
+          We email you when a new home matches (at most once every few hours per search). Save a search from the{" "}
+          <Link href="/properties" className="font-semibold text-forest-800 hover:underline">
+            listings page
+          </Link>
+          .
+        </p>
+        {searches.length === 0 ? (
+          <div className="mt-5">
+            <EmptyState
+              icon={BellPlus}
+              title="No saved searches yet"
+              description="Filter homes by area, type and budget, then tap “Save search” to get an email when something new matches."
+              action={{ label: "Start a search", href: "/properties" }}
+            />
+          </div>
+        ) : (
+          <ul className="mt-5 space-y-3">
+            {searches.map((s) => (
+              <li key={s.id} className="card flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
+                <div className="min-w-0 flex-1">
+                  <p className="flex flex-wrap items-center gap-2 font-semibold">
+                    <span className="truncate">{s.name}</span>
+                    {s.newSince > 0 && <span className="badge bg-terracotta-500 text-white">{s.newSince} new</span>}
+                  </p>
+                  <p className="text-sm text-stone-600">
+                    {s.total} {s.total === 1 ? "home matches" : "homes match"} now · saved {formatDate(s.createdAt)}
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <a href={`/api/saved-searches/${s.id}/open`} className="btn btn-sm btn-primary">
+                    View homes
+                  </a>
+                  <SavedSearchActions id={s.id} name={s.name} emailAlerts={s.emailAlerts} />
+                </div>
+              </li>
+            ))}
           </ul>
         )}
       </section>

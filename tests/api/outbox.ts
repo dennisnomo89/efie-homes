@@ -8,7 +8,7 @@ import path from "node:path";
 export const OUTBOX_DIR = process.env.EMAIL_OUTBOX_DIR?.trim() || "";
 export const outboxEnabled = Boolean(OUTBOX_DIR);
 
-export type OutboxEmail = { to: string; subject: string; text: string; html: string; replyTo?: string; createdAt: string };
+export type OutboxEmail = { to: string; subject: string; text: string; html: string; replyTo?: string; headers?: Record<string, string>; createdAt: string };
 
 async function readAll(): Promise<OutboxEmail[]> {
   const dir = path.resolve(OUTBOX_DIR);

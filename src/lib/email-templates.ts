@@ -213,3 +213,46 @@ export function newMessageEmail(p: {
     ].join("\n"),
   };
 }
+
+export function savedSearchAlertEmail(p: {
+  name: string;
+  searchName: string;
+  listing: { title: string; monthlyRent: number; neighborhood: string; region: string; bedrooms: number; propertyType: string; image: string | null; url: string };
+  searchUrl: string;
+  unsubscribeUrl: string;
+}): Rendered {
+  const l = p.listing;
+  const price = `₵ ${l.monthlyRent.toLocaleString("en-GH")}/month`;
+  const subject = `New match: ${l.title} (${price})`;
+  const image = l.image
+    ? `<a href="${escapeHtml(l.url)}"><img src="${escapeHtml(l.image)}" alt="" width="504" style="width:100%;max-width:504px;border-radius:12px;display:block;margin:12px 0"></a>`
+    : "";
+  return {
+    subject,
+    html: layout({
+      preheader: `${price} in ${l.neighborhood}: matches your saved search "${p.searchName}".`,
+      heading: "A new home matches your search",
+      body: `Hi ${escapeHtml(firstName(p.name))},<br>A home matching <strong>${escapeHtml(p.searchName)}</strong> was just listed.${image}${detailRows([
+        ["Home", l.title],
+        ["Rent", price],
+        ["Area", `${l.neighborhood}, ${l.region}`],
+        ["Type", `${l.bedrooms > 0 ? `${l.bedrooms}-bed ` : ""}${l.propertyType}`],
+      ])}<a href="${escapeHtml(p.searchUrl)}" style="color:#174e3c;font-weight:600">See all homes for this search</a>`,
+      cta: { label: "View this home", url: l.url },
+      footer: `You're getting this because you saved the search "${escapeHtml(p.searchName)}" on Efie Homes. <a href="${escapeHtml(p.unsubscribeUrl)}" style="color:#78716c">Stop alerts for this search</a>.`,
+    }),
+    text: [
+      `Hi ${firstName(p.name)},`,
+      ``,
+      `A home matching your saved search "${p.searchName}" was just listed:`,
+      ``,
+      `${l.title}`,
+      `${price} · ${l.neighborhood}, ${l.region}`,
+      l.url,
+      ``,
+      `All homes for this search: ${p.searchUrl}`,
+      ``,
+      `Stop alerts for this search: ${p.unsubscribeUrl}`,
+    ].join("\n"),
+  };
+}

@@ -1,4 +1,6 @@
+import { after } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { notifySavedSearchMatches } from "@/lib/notifications";
 import { guard, ok, readJson, validationFailed } from "@/lib/api";
 import { parseFilters, searchProperties, toView } from "@/lib/properties";
 import { propertySchema } from "@/lib/validations";
@@ -28,5 +30,7 @@ export async function POST(req: Request) {
       landlordId: g.session.sub,
     },
   });
+  // Email tenants whose saved searches this new home matches (after the response is sent).
+  after(() => notifySavedSearchMatches(property.id));
   return ok({ property: toView(property) }, 201);
 }

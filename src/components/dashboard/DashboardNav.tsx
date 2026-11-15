@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Heart, LayoutDashboard, Plus, ShieldCheck, UserRound } from "lucide-react";
+import { Bell, CalendarDays, Heart, LayoutDashboard, Plus, ShieldCheck, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function DashboardNav({ role }: { role: string }) {
@@ -19,6 +19,7 @@ export function DashboardNav({ role }: { role: string }) {
     : [
         { href: "/dashboard/tenant", label: "My viewings", icon: CalendarDays },
         { href: "/dashboard/tenant#saved", label: "Saved homes", icon: Heart },
+        { href: "/dashboard/tenant#searches", label: "Saved searches", icon: Bell },
         { href: "/dashboard/profile", label: "Profile", icon: UserRound },
       ];
 

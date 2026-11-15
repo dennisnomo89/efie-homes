@@ -7,6 +7,8 @@ export type Email = {
   html: string;
   text: string;
   replyTo?: string;
+  /** Extra email headers, e.g. List-Unsubscribe */
+  headers?: Record<string, string>;
 };
 
 export type SendResult = { ok: boolean; transport: "resend" | "outbox" | "log"; error?: string };
@@ -36,6 +38,7 @@ export async function sendEmail(email: Email): Promise<SendResult> {
           html: email.html,
           text: email.text,
           ...(email.replyTo ? { reply_to: email.replyTo } : {}),
+          ...(email.headers ? { headers: email.headers } : {}),
         }),
       });
       if (!res.ok) {

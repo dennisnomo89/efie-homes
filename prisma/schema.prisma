@@ -39,6 +39,7 @@ model User {
   savedProperties SavedProperty[]
   passwordResetTokens PasswordResetToken[]
   messages        Message[]
+  savedSearches   SavedSearch[]
 }
 
 model Property {
@@ -166,4 +167,23 @@ model RateLimitHit {
   createdAt DateTime @default(now())
 
   @@index([key, createdAt])
+}
+
+/// A tenant's saved search. `query` is the normalised filter query string (e.g. "location=Osu&bedrooms=2").
+model SavedSearch {
+  id              String    @id @default(cuid())
+  name            String
+  query           String
+  emailAlerts     Boolean   @default(true)
+  /// Last alert email sent for this search (alerts are throttled)
+  lastNotifiedAt  DateTime?
+  /// When the tenant last opened the results (for "N new" counts)
+  lastSeenAt      DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, query])
+  @@index([emailAlerts])
 }
