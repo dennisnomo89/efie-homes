@@ -184,3 +184,32 @@ export function passwordResetEmail(p: { name: string; resetUrl: string; minutes:
     ].join("\n"),
   };
 }
+
+export function newMessageEmail(p: {
+  recipientName: string;
+  senderName: string;
+  propertyTitle: string;
+  body: string;
+  threadUrl: string;
+}): Rendered {
+  const subject = `New message from ${p.senderName}: ${p.propertyTitle}`;
+  return {
+    subject,
+    html: layout({
+      preheader: p.body.slice(0, 90),
+      heading: `${p.senderName} sent you a message`,
+      body: `Hi ${escapeHtml(firstName(p.recipientName))},<br>About <strong>${escapeHtml(p.propertyTitle)}</strong>:${quote(p.body)}`,
+      cta: { label: "Reply on Efie Homes", url: p.threadUrl },
+      footer: "Replies to this email aren't delivered. Please reply on Efie Homes so the conversation stays in one place.",
+    }),
+    text: [
+      `Hi ${firstName(p.recipientName)},`,
+      ``,
+      `${p.senderName} sent you a message about "${p.propertyTitle}":`,
+      ``,
+      p.body,
+      ``,
+      `Reply on Efie Homes: ${p.threadUrl}`,
+    ].join("\n"),
+  };
+}

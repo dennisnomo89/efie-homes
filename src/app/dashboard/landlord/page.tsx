@@ -4,21 +4,23 @@ import { Building2, CalendarDays, Eye, Inbox, KeyRound, MapPin, MessageSquareTex
 import { ListingActions } from "@/components/dashboard/ListingActions";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
+import { MessageThread } from "@/components/dashboard/MessageThread";
 import { ViewingRequestActions } from "@/components/dashboard/ViewingRequestActions";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SafeImage } from "@/components/ui/SafeImage";
 import { requireUser } from "@/lib/auth";
 import { advanceLabel, propertyTypeLabel } from "@/lib/constants";
+import { messageTotals, unreadCounts } from "@/lib/messages";
 import { prisma } from "@/lib/prisma";
 import { cn, formatCedis, formatDate, formatTime, parseJsonArray } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Landlord dashboard" };
 
-type Props = { searchParams: Promise<{ tab?: string }> };
+type Props = { searchParams: Promise<{ tab?: string; thread?: string }> };
 
 export default async function LandlordDashboard({ searchParams }: Props) {
   const user = await requireUser(["LANDLORD", "ADMIN"], "/dashboard/landlord");
-  const { tab } = await searchParams;
+  const { tab, thread: openThread } = await searchParams;
   const listingFilter = tab === "rented" ? "RENTED" : tab === "active" ? "AVAILABLE" : undefined;
   const isAdmin = user.role === "ADMIN";
   const ownerWhere = isAdmin ? {} : { landlordId: user.id };
@@ -43,8 +45,17 @@ export default async function LandlordDashboard({ searchParams }: Props) {
   const rented = listings.filter((l) => l.status === "RENTED");
   const totalViews = listings.reduce((s, l) => s + l.views, 0);
   const totalSaves = listings.reduce((s, l) => s + l._count.savedBy, 0);
+  const requestIds = requests.map((r) => r.id);
+  // Admins read threads without marking them read, so unread badges don't apply to them.
+  const noUnread: Record<string, number> = {};
+  const [unread, totals] = await Promise.all([isAdmin ? noUnread : unreadCounts(user.id, requestIds), messageTotals(requestIds)]);
   const pending = requests.filter((r) => r.status === "PENDING");
-  const responded = requests.filter((r) => r.status !== "PENDING").slice(0, 8);
+  // Answered requests: the 8 most recent, plus any older ones with unread messages or linked from an email.
+  const responded = requests
+    .filter((r) => r.status !== "PENDING")
+    .filter((r, i) => i < 8 || (unread[r.id] ?? 0) > 0 || r.id === openThread);
+  const respondedUnread = responded.reduce((s, r) => s + (unread[r.id] ?? 0), 0);
+  const unreadTotal = Object.values(unread).reduce((s, n) => s + n, 0);
   const monthlyIncome = rented.reduce((s, l) => s + l.monthlyRent, 0);
   const shown = listingFilter ? listings.filter((l) => l.status === listingFilter) : listings;
 
@@ -53,7 +64,7 @@ export default async function LandlordDashboard({ searchParams }: Props) {
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
         <StatCard icon={Building2} label="Total listings" value={listings.length} />
         <StatCard icon={KeyRound} label="Active / rented" value={`${active.length} / ${rented.length}`} tone="stone" />
-        <StatCard icon={Inbox} label="Pending requests" value={pending.length} tone="gold" />
+        <StatCard icon={Inbox} label={unreadTotal ? `Pending requests · ${unreadTotal} unread ${unreadTotal === 1 ? "message" : "messages"}` : "Pending requests"} value={pending.length} tone="gold" />
         <StatCard icon={Eye} label={`Views · ${totalSaves} saves`} value={totalViews.toLocaleString()} tone="terracotta" />
         <div className="col-span-2 lg:col-span-1">
           <StatCard icon={Wallet} label="Monthly rent (rented units)" value={formatCedis(monthlyIncome)} />
@@ -98,6 +109,15 @@ export default async function LandlordDashboard({ searchParams }: Props) {
                 <p className="mt-3 flex flex-1 gap-2 rounded-xl bg-sand p-3 text-sm text-stone-700">
                   <MessageSquareText className="mt-0.5 h-4 w-4 shrink-0 text-stone-500" /> {r.message}
                 </p>
+                <div className="mt-3">
+                  <MessageThread
+                    viewingId={r.id}
+                    withName={r.tenant.name}
+                    unread={unread[r.id] ?? 0}
+                    total={totals[r.id] ?? 0}
+                    autoOpen={openThread === r.id}
+                  />
+                </div>
                 <div className="mt-4">
                   <ViewingRequestActions id={r.id} tenantName={r.tenant.name.split(" ")[0]} />
                 </div>
@@ -107,17 +127,32 @@ export default async function LandlordDashboard({ searchParams }: Props) {
         )}
 
         {responded.length > 0 && (
-          <details className="mt-5 rounded-2xl border border-stone-200 bg-white">
-            <summary className="cursor-pointer select-none px-5 py-4 text-sm font-semibold">Recently answered ({responded.length})</summary>
+          <details
+            className="mt-5 rounded-2xl border border-stone-200 bg-white"
+            open={respondedUnread > 0 || responded.some((r) => r.id === openThread)}
+          >
+            <summary className="cursor-pointer select-none px-5 py-4 text-sm font-semibold">
+              Recently answered ({responded.length})
+              {respondedUnread > 0 && (
+                <span className="ml-2 rounded-full bg-terracotta-500 px-2 py-0.5 text-xs font-bold text-white">{respondedUnread} unread</span>
+              )}
+            </summary>
             <ul className="divide-y divide-stone-100 border-t border-stone-100">
               {responded.map((r) => (
                 <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 text-sm">
                   <span className="min-w-0">
                     <strong className="font-semibold">{r.tenant.name}</strong> · <span className="text-stone-600">{r.property.title}</span>
                   </span>
-                  <span className="flex items-center gap-3">
+                  <span className="flex flex-wrap items-center gap-3">
                     <span className="text-stone-500">{formatDate(r.preferredDate)}</span>
                     <StatusBadge status={r.status} />
+                    <MessageThread
+                      viewingId={r.id}
+                      withName={r.tenant.name}
+                      unread={unread[r.id] ?? 0}
+                      total={totals[r.id] ?? 0}
+                      autoOpen={openThread === r.id}
+                    />
                   </span>
                 </li>
               ))}

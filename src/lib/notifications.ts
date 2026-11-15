@@ -1,6 +1,6 @@
 import { prisma } from "./prisma";
 import { appUrl, sendEmail } from "./email";
-import { viewingAnsweredEmail, viewingCancelledEmail, viewingRequestedEmail } from "./email-templates";
+import { newMessageEmail, viewingAnsweredEmail, viewingCancelledEmail, viewingRequestedEmail } from "./email-templates";
 
 /* Each function loads what it needs and sends one email. They never throw (sendEmail swallows errors),
  * so they are safe to run with next/server's after() once the response has been sent. */
@@ -74,4 +74,53 @@ export async function notifyViewingCancelled(v: CancelledViewing) {
     dashboardUrl: `${appUrl()}/dashboard/landlord`,
   });
   await sendEmail({ to: v.landlordEmail, ...email });
+}
+
+/** Quiet period: no further email for a thread while an earlier message from the same sender is still unread. */
+export const MESSAGE_EMAIL_QUIET_MS = 10 * 60 * 1000;
+
+/** Emails the other participant about a new message, unless they already have an unread one from this sender. */
+export async function notifyNewMessage(messageId: string) {
+  try {
+    const m = await prisma.message.findUnique({
+      where: { id: messageId },
+      include: {
+        sender: { select: { name: true } },
+        viewingRequest: {
+          select: {
+            id: true,
+            tenantId: true,
+            tenant: { select: { name: true, email: true } },
+            property: { select: { title: true, landlordId: true, landlord: { select: { name: true, email: true } } } },
+          },
+        },
+      },
+    });
+    if (!m) return;
+
+    const earlierUnread = await prisma.message.count({
+      where: {
+        viewingRequestId: m.viewingRequestId,
+        senderId: m.senderId,
+        readAt: null,
+        id: { not: m.id },
+        createdAt: { gt: new Date(m.createdAt.getTime() - MESSAGE_EMAIL_QUIET_MS), lte: m.createdAt },
+      },
+    });
+    if (earlierUnread > 0) return;
+
+    const v = m.viewingRequest;
+    const toTenant = m.senderId !== v.tenantId;
+    const recipient = toTenant ? v.tenant : v.property.landlord;
+    const email = newMessageEmail({
+      recipientName: recipient.name,
+      senderName: m.sender.name,
+      propertyTitle: v.property.title,
+      body: m.body,
+      threadUrl: `${appUrl()}/dashboard/${toTenant ? "tenant" : "landlord"}?thread=${v.id}`,
+    });
+    await sendEmail({ to: recipient.email, ...email });
+  } catch (err) {
+    console.error("[notify] new message:", err instanceof Error ? err.message : err);
+  }
 }

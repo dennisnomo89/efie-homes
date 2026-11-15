@@ -2,20 +2,25 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CalendarCheck, CalendarDays, Clock, Heart, MapPin, MessageSquareText, Phone } from "lucide-react";
 import { CancelViewingButton } from "@/components/dashboard/CancelViewingButton";
+import { MessageThread } from "@/components/dashboard/MessageThread";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
 import { PropertyCard } from "@/components/PropertyCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SafeImage } from "@/components/ui/SafeImage";
 import { requireUser } from "@/lib/auth";
+import { messageTotals, unreadCounts } from "@/lib/messages";
 import { prisma } from "@/lib/prisma";
 import { landlordSelect, toView } from "@/lib/properties";
 import { formatCedis, formatDate, formatTime, parseJsonArray } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Tenant dashboard" };
 
-export default async function TenantDashboard() {
+type Props = { searchParams: Promise<{ thread?: string }> };
+
+export default async function TenantDashboard({ searchParams }: Props) {
   const user = await requireUser(["TENANT", "ADMIN"], "/dashboard/tenant");
+  const { thread: openThread } = await searchParams;
 
   const [viewings, saved] = await Promise.all([
     prisma.viewingRequest.findMany({
@@ -43,6 +48,8 @@ export default async function TenantDashboard() {
   ]);
 
   const count = (s: string) => viewings.filter((v) => v.status === s).length;
+  const viewingIds = viewings.map((v) => v.id);
+  const [unread, totals] = await Promise.all([unreadCounts(user.id, viewingIds), messageTotals(viewingIds)]);
 
   return (
     <div className="space-y-12">
@@ -90,8 +97,15 @@ export default async function TenantDashboard() {
                     </div>
                   </Link>
                   <div className="flex flex-col gap-2 sm:items-end">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                       <StatusBadge status={v.status} />
+                      <MessageThread
+                        viewingId={v.id}
+                        withName={v.property.landlord.name}
+                        unread={unread[v.id] ?? 0}
+                        total={totals[v.id] ?? 0}
+                        autoOpen={openThread === v.id}
+                      />
                       {v.status === "PENDING" && <CancelViewingButton id={v.id} />}
                     </div>
                     {v.status === "CONFIRMED" && v.property.landlord.phone && (

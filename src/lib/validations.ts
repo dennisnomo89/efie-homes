@@ -181,3 +181,13 @@ export const adminPropertySchema = z
     isFeatured: z.boolean().optional(),
   })
   .refine((v) => v.isHidden !== undefined || v.isFeatured !== undefined, { message: "Nothing to update" });
+
+export const MESSAGE_MAX_LENGTH = 2000;
+
+export const messageSchema = z.object({
+  body: z
+    .string()
+    .trim()
+    .min(1, "Write a message first")
+    .max(MESSAGE_MAX_LENGTH, `Keep messages under ${MESSAGE_MAX_LENGTH.toLocaleString()} characters`),
+});

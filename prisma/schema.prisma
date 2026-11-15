@@ -38,6 +38,7 @@ model User {
   viewingRequests ViewingRequest[]
   savedProperties SavedProperty[]
   passwordResetTokens PasswordResetToken[]
+  messages        Message[]
 }
 
 model Property {
@@ -105,10 +106,28 @@ model ViewingRequest {
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   tenantId   String
   tenant     User     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  messages   Message[]
 
   @@index([propertyId])
   @@index([tenantId])
   @@index([status])
+}
+
+/// A message in the private thread attached to a viewing request (tenant ↔ landlord).
+model Message {
+  id        String    @id @default(cuid())
+  body      String
+  createdAt DateTime  @default(now())
+  /// When the other participant read it
+  readAt    DateTime?
+
+  viewingRequestId String
+  viewingRequest   ViewingRequest @relation(fields: [viewingRequestId], references: [id], onDelete: Cascade)
+  senderId         String
+  sender           User           @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([viewingRequestId, createdAt])
+  @@index([senderId])
 }
 
 /// One-time password reset links. Only a SHA-256 hash of the token is stored.
