@@ -33,7 +33,7 @@ export function detectImageType(bytes: Uint8Array): ImageType | null {
 export const LOCAL_NAME = /^[a-z0-9]{24}\.(jpg|png|webp)$/;
 
 export function localUploadsDir(): string {
-  return path.resolve(process.env.UPLOADS_DIR?.trim() || ".uploads");
+  return path.resolve(/* turbopackIgnore: true */ process.env.UPLOADS_DIR?.trim() || ".uploads");
 }
 
 /** Stores an image and returns its public URL. */
@@ -54,7 +54,7 @@ export async function storeImage(bytes: Uint8Array, type: ImageType, ownerId: st
   if (mode === "local") {
     const dir = localUploadsDir();
     await mkdir(dir, { recursive: true });
-    await writeFile(path.join(dir, name), bytes);
+    await writeFile(path.join(/* turbopackIgnore: true */ dir, name), bytes);
     return `${appUrl()}/api/uploads/${name}`;
   }
 

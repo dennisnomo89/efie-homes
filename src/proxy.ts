@@ -7,7 +7,7 @@ const ROLE_HOME: Record<string, string> = {
   ADMIN: "/dashboard/admin",
 };
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
   const token = req.cookies.get(AUTH_COOKIE)?.value;
   const session = token ? await verifyToken(token) : null;

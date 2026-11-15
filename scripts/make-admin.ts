@@ -3,11 +3,10 @@
  *   npm run make-admin -- you@example.com
  *
  * Uses the database in .env. The person must log out and back in afterwards,
- * because their role is stored in their session cookie.
+ * because page routing reads the role from their session cookie.
  */
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../src/lib/prisma";
 
-const prisma = new PrismaClient();
 
 async function main() {
   const email = process.argv[2]?.trim().toLowerCase();

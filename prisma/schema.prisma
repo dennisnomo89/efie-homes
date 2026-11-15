@@ -1,7 +1,7 @@
 // Efie Homes — Prisma schema
 // PostgreSQL (hosted on Neon in production).
-//   DATABASE_URL           pooled connection, used by the app at runtime
-//   DATABASE_URL_UNPOOLED  direct connection, used by Prisma Migrate
+//   DATABASE_URL           pooled connection, used by the app at runtime (src/lib/prisma.ts)
+//   DATABASE_URL_UNPOOLED  direct connection, used by Prisma Migrate (prisma.config.ts)
 // These are the variable names Vercel's Neon integration creates automatically.
 //
 // Enum-like fields (role, propertyType, status, …) are stored as strings and
@@ -9,13 +9,13 @@
 // amenities) are stored as JSON-encoded strings.
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
+// Connection strings live in prisma.config.ts (migrations) and src/lib/prisma.ts (runtime).
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DATABASE_URL_UNPOOLED")
+  provider = "postgresql"
 }
 
 model User {

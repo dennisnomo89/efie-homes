@@ -10,3 +10,4 @@ prisma/*.db-journal
 .DS_Store
 .email-outbox
 .uploads
+src/generated

@@ -28,7 +28,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const user = await getCurrentUser();
 
   return (
-    <html lang="en-GH" className={`${sans.variable} ${display.variable}`}>
+    <html lang="en-GH" data-scroll-behavior="smooth" className={`${sans.variable} ${display.variable}`}>
       <body className="flex min-h-screen flex-col">
         <ToastProvider>
           <Navbar user={user ? { name: user.name, role: user.role, avatarUrl: user.avatarUrl } : null} />

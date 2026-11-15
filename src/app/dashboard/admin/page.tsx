@@ -9,7 +9,7 @@ import { SafeImage } from "@/components/ui/SafeImage";
 import { requireUser } from "@/lib/auth";
 import { DEMO_EMAIL_DOMAIN, propertyTypeLabel } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "@/generated/prisma/client";
 import { cn, formatCedis, formatDate, parseJsonArray } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Admin" };

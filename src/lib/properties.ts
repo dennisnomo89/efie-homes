@@ -1,4 +1,4 @@
-import type { Prisma, Property, User } from "@prisma/client";
+import type { Prisma, Property, User } from "@/generated/prisma/client";
 import { prisma } from "./prisma";
 import { AMENITY_VALUES, PAGE_SIZE, PROPERTY_TYPE_VALUES, REGIONS, type Amenity } from "./constants";
 import { parseJsonArray } from "./utils";

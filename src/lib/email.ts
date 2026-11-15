@@ -54,9 +54,9 @@ export async function sendEmail(email: Email): Promise<SendResult> {
 
     const outbox = process.env.EMAIL_OUTBOX_DIR?.trim();
     if (outbox) {
-      const dir = path.resolve(outbox);
+      const dir = path.resolve(/* turbopackIgnore: true */ outbox);
       await mkdir(dir, { recursive: true });
-      const file = path.join(dir, `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.json`);
+      const file = path.join(/* turbopackIgnore: true */ dir, `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.json`);
       await writeFile(file, JSON.stringify({ ...email, createdAt: new Date().toISOString() }, null, 2));
       return { ok: true, transport: "outbox" };
     }

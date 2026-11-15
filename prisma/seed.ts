@@ -4,10 +4,10 @@
  * WARNING: deletes all existing data first. It refuses to run if the database
  * contains real (non-@efiehomes.test) accounts unless SEED_FORCE=true.
  */
-import { PrismaClient, type Property } from "@prisma/client";
+import type { Property } from "../src/generated/prisma/client";
+import { prisma } from "../src/lib/prisma";
 import bcrypt from "bcryptjs";
 
-const prisma = new PrismaClient();
 
 const img = (id: string) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=1400&q=75`;
 

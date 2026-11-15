@@ -2,7 +2,7 @@
 
 *Efie* means "home" in Twi. Efie Homes is a rental marketplace for Ghana. Landlords and verified agents list homes, and tenants search, save favourites and book viewings. Prices are shown in Ghana Cedis, and every listing states its rent advance terms.
 
-**Stack:** Next.js 15 (App Router) · TypeScript · Tailwind CSS · Lucide icons · Prisma 6 + PostgreSQL (Neon) · JWT auth (`jose`, httpOnly cookie) · `bcryptjs` · Zod
+**Stack:** Next.js 16 (App Router, Turbopack) · TypeScript · Tailwind CSS · Lucide icons · Prisma 7 (`@prisma/adapter-pg`) + PostgreSQL (Neon) · JWT auth (`jose`, httpOnly cookie) · `bcryptjs` · Zod
 
 ---
 
@@ -78,7 +78,7 @@ Every push to `main` then redeploys automatically.
 | `npm test` | Unit tests (no database needed) |
 | `npm run test:api` | API tests against a running app (see Testing) |
 | `npm run make-admin -- <email>` | Promote an account to admin in the `.env` database |
-| `npm run db:migrate` | `prisma migrate dev` (create a new migration after schema changes) |
+| `npm run db:migrate` | `prisma migrate dev` + `prisma generate` (create a migration after schema changes) |
 | `npm run db:deploy` | `prisma migrate deploy` (apply migrations) |
 | `npm run db:seed` | Re-run `prisma/seed.ts` (wipes and reloads demo data) |
 | `npm run db:reset` | Drop, re-migrate and re-seed |
@@ -95,7 +95,7 @@ efie-homes/
 │   ├── seed.ts                # 8 users, 19 properties (Accra, Tema, Kumasi, Takoradi), viewings, wishlists
 │   └── migrations/
 ├── src/
-│   ├── middleware.ts          # Protects /dashboard/*, role routing, bounces signed-in users from /login
+│   ├── proxy.ts               # (Next 16 "proxy", formerly middleware) Protects /dashboard/*, role routing, bounces signed-in users from /login
 │   ├── lib/
 │   │   ├── constants.ts       # Regions, neighbourhoods, property types, amenities, advance options
 │   │   ├── validations.ts     # Zod schemas shared by client forms and API routes
@@ -254,5 +254,7 @@ Tests use [Vitest](https://vitest.dev) and live in `tests/`.
 
 - Role, type and status are stored as strings and checked by Zod. Images and amenities are stored as JSON strings. (This dates from the original SQLite version and works fine on PostgreSQL.)
 - Location search is case-insensitive (`mode: "insensitive"` in `src/lib/properties.ts`).
-- Listing photos are entered as image URLs, and `<SafeImage>` shows a placeholder if a URL fails. To support file uploads, add a storage provider such as S3, Cloudinary or UploadThing.
+- Listing photos can be uploaded (see above) or entered as image URLs; `<SafeImage>` shows a placeholder if an image fails to load.
 - On the login page, demo account hints appear only outside production (`NODE_ENV !== "production"`).
+- **Prisma 7 specifics:** connection settings for the CLI live in `prisma.config.ts` (it loads `.env` via `dotenv`); the app connects through `@prisma/adapter-pg` in `src/lib/prisma.ts`. The client is generated into `src/generated/prisma` (git-ignored; `npm install` regenerates it). `prisma migrate dev`/`reset` no longer seed or generate on their own; the `db:migrate` and `db:reset` scripts do it for you.
+- `npm audit` reports no known vulnerabilities as of the Next 16 / Prisma 7 upgrade. An npm `overrides` entry pins Zod for `@vercel/blob`'s dependencies to the patched version.

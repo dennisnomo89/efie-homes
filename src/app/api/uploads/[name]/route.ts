@@ -11,7 +11,7 @@ export async function GET(_req: Request, { params }: Ctx) {
   const { name } = await params;
   if (uploadsMode() !== "local" || !LOCAL_NAME.test(name)) return new Response("Not found", { status: 404 });
   try {
-    const bytes = await readFile(path.join(localUploadsDir(), name));
+    const bytes = await readFile(path.join(/* turbopackIgnore: true */ localUploadsDir(), name));
     const ext = name.split(".").pop() as keyof typeof TYPES;
     return new Response(new Uint8Array(bytes), {
       headers: {
