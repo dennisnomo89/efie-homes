@@ -1,4 +1,7 @@
 import { describe, expect, it } from "vitest";
+
+// These tests make dozens of real login/sign-up requests (bcrypt + database), so they need longer than the default.
+const SLOW = 120_000;
 import { anon, Client, uniqueTag } from "./client";
 
 const PASSWORD = "RightPass123";
@@ -24,7 +27,7 @@ describe("login limits", () => {
     // Other accounts are unaffected.
     const other = await register();
     expect((await login(other.email, PASSWORD)).status).toBe(200);
-  });
+  }, SLOW);
 
   it("forgets earlier failures after a successful login", async () => {
     const { email } = await register();
@@ -32,7 +35,7 @@ describe("login limits", () => {
     expect((await login(email, PASSWORD)).status).toBe(200);
     for (let i = 0; i < 9; i++) expect((await login(email, `Again${i}pass`)).status).toBe(401);
     expect((await login(email, PASSWORD)).status).toBe(200);
-  });
+  }, SLOW);
 
   it("blocks one network after 30 failed logins across many accounts", async () => {
     const attacker = anon(); // one fixed network address for all attempts
@@ -43,7 +46,7 @@ describe("login limits", () => {
     // Someone on a different network can still log in.
     const { email } = await register();
     expect((await login(email, PASSWORD)).status).toBe(200);
-  });
+  }, SLOW);
 });
 
 describe("sign-up and password reset limits", () => {
@@ -57,13 +60,13 @@ describe("sign-up and password reset limits", () => {
       role: "TENANT",
     });
     expect(res.status).toBe(429);
-  });
+  }, SLOW);
 
   it("allows 10 'forgot password' requests per network per hour", async () => {
     const c = anon();
     for (let i = 0; i < 10; i++) expect((await c.post("/api/auth/forgot-password", { email: `x${i}-${uniqueTag()}@efiehomes.test` })).status).toBe(200);
     expect((await c.post("/api/auth/forgot-password", { email: `x-${uniqueTag()}@efiehomes.test` })).status).toBe(429);
-  });
+  }, SLOW);
 
   it("slows down reset-token guessing from one network", async () => {
     const c = anon();
@@ -71,5 +74,5 @@ describe("sign-up and password reset limits", () => {
       expect((await c.post("/api/auth/reset-password", { token: `guess-${i}-${"x".repeat(30)}`, password: "NewPass123" })).status).toBe(400);
     }
     expect((await c.post("/api/auth/reset-password", { token: `guess-final-${"x".repeat(30)}`, password: "NewPass123" })).status).toBe(429);
-  });
+  }, SLOW);
 });

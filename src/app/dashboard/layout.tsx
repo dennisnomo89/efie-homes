@@ -1,5 +1,9 @@
 import { DashboardNav } from "@/components/dashboard/DashboardNav";
+import type { Metadata } from "next";
 import { requireUser } from "@/lib/auth";
+
+// Private pages: never in search results.
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();

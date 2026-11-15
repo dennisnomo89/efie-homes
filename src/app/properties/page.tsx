@@ -11,7 +11,33 @@ import { advanceLabel, amenityLabel, propertyTypeLabel } from "@/lib/constants";
 import { filtersToQuery, getSavedIds, parseFilters, searchMapPins, searchProperties, type PropertyFilters } from "@/lib/properties";
 import { cn, favoriteModeFor, formatCedis } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "Rentals across Ghana" };
+/**
+ * Titles describe the search ("2 Bedroom Apartment rentals in East Legon"). Only simple searches
+ * (location / region / type) are indexed; heavily filtered, paginated or map views point search
+ * engines at the simple version instead of creating thousands of near-duplicate pages.
+ */
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  const params = await searchParams;
+  const f = parseFilters(params);
+  const place = f.location ?? f.region ?? "Ghana";
+  const what = f.type ? `${propertyTypeLabel(f.type)} rentals` : "Homes for rent";
+  const title = `${what} in ${place}`;
+  const canonical = `/properties${filtersToQuery({ location: f.location, region: f.region, type: f.type })}`;
+  const narrowed =
+    f.page > 1 ||
+    params.view === "map" ||
+    f.sort !== "newest" ||
+    [f.minPrice, f.maxPrice, f.advance, f.bedrooms, f.bathrooms, f.furnished].some((v) => v !== undefined) ||
+    f.amenities.length > 0;
+  const description = `Browse ${what.toLowerCase()} in ${place}: prices in Ghana Cedis, rent advance shown upfront, and viewings booked directly with landlords.`;
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    robots: narrowed ? { index: false, follow: true } : undefined,
+    openGraph: { title, description, url: canonical },
+  };
+}
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 

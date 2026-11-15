@@ -22,19 +22,35 @@ import { ImageGallery } from "@/components/ImageGallery";
 import { AreaMapLoader } from "@/components/map/MapLoaders";
 import { PropertyCard } from "@/components/PropertyCard";
 import { ScheduleViewingModal } from "@/components/ScheduleViewingModal";
+import { ShareButton } from "@/components/ShareButton";
 import { getCurrentUser } from "@/lib/auth";
 import { AMENITIES, advanceLabel, propertyTypeLabel } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import { getSavedIds, landlordSelect, toView } from "@/lib/properties";
+import { jsonLdScript, listingJsonLd, listingSummary } from "@/lib/seo";
+import { absoluteUrl } from "@/lib/site";
 import { cn, favoriteModeFor, formatCedis, formatDate, initials } from "@/lib/utils";
 
 type Props = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const p = await prisma.property.findUnique({ where: { id }, select: { title: true, neighborhood: true, monthlyRent: true, isHidden: true } });
-  if (!p || p.isHidden) return { title: "Property not found" };
-  return { title: p.title, description: `${formatCedis(p.monthlyRent)} / month in ${p.neighborhood}. Book a viewing on Efie Homes.` };
+  const raw = await prisma.property.findUnique({ where: { id } });
+  if (!raw || raw.isHidden) return { title: "Property not found", robots: { index: false } };
+  const p = toView(raw);
+  const description = listingSummary(p);
+  const title = `${p.title} — ${formatCedis(p.monthlyRent)}/month`;
+  const path = `/properties/${p.id}`;
+  const images = p.images.slice(0, 1).map((url) => ({ url, alt: p.title }));
+  return {
+    title: p.title,
+    description,
+    alternates: { canonical: path },
+    // Rented homes stay reachable from old links but drop out of search results.
+    robots: p.status === "RENTED" ? { index: false, follow: true } : undefined,
+    openGraph: { type: "website", url: path, title, description, ...(images.length ? { images } : {}) },
+    twitter: { card: images.length ? "summary_large_image" : "summary", title, description, ...(images.length ? { images: images.map((i) => i.url) } : {}) },
+  };
 }
 
 export default async function PropertyDetailPage({ params }: Props) {
@@ -73,6 +89,9 @@ export default async function PropertyDetailPage({ params }: Props) {
 
   return (
     <div className="container py-6 sm:py-8">
+      {!property.isHidden && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(listingJsonLd(property)) }} />
+      )}
       <nav className="mb-4 flex flex-wrap gap-1 text-sm text-stone-500" aria-label="Breadcrumb">
         <Link href="/" className="hover:text-forest-800">Home</Link> /
         <Link href={`/properties?region=${encodeURIComponent(property.region)}`} className="hover:text-forest-800">{property.region}</Link> /
@@ -179,7 +198,17 @@ export default async function PropertyDetailPage({ params }: Props) {
                   <p className="font-display text-3xl font-semibold text-forest-800">{formatCedis(property.monthlyRent)}</p>
                   <p className="text-sm text-stone-500">per month</p>
                 </div>
-                <FavoriteButton propertyId={property.id} initialSaved={savedIds.has(property.id)} mode={favoriteMode} variant="full" className="min-h-[40px] px-3" />
+                <div className="flex gap-2">
+                  {!property.isHidden && (
+                    <ShareButton
+                      url={absoluteUrl(`/properties/${property.id}`)}
+                      title={property.title}
+                      text={`${property.title}: ${formatCedis(property.monthlyRent)}/month in ${property.neighborhood}`}
+                      className="min-h-[40px] px-3"
+                    />
+                  )}
+                  <FavoriteButton propertyId={property.id} initialSaved={savedIds.has(property.id)} mode={favoriteMode} variant="full" className="min-h-[40px] px-3" />
+                </div>
               </div>
 
               <div className="mt-4">

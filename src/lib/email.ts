@@ -11,14 +11,8 @@ export type Email = {
 
 export type SendResult = { ok: boolean; transport: "resend" | "outbox" | "log"; error?: string };
 
-/** Public base URL used in email links. */
-export function appUrl(): string {
-  const explicit = process.env.APP_URL?.trim();
-  if (explicit) return explicit.replace(/\/+$/, "");
-  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
-  if (vercel) return `https://${vercel.replace(/\/+$/, "")}`;
-  return "http://localhost:3000";
-}
+/** Public base URL used in email links (re-exported for existing imports). */
+export { appUrl } from "./site";
 
 /**
  * Sends an email. Never throws: emails are best-effort and must not break the request that triggered them.

@@ -18,6 +18,7 @@ import { SafeImage } from "@/components/ui/SafeImage";
 import { getSession } from "@/lib/auth";
 import { POPULAR_NEIGHBORHOODS, PROPERTY_TYPES } from "@/lib/constants";
 import { calculateUpfront } from "@/lib/pricing";
+import { jsonLdScript, siteJsonLd } from "@/lib/seo";
 import { prisma } from "@/lib/prisma";
 import { getSavedIds, landlordSelect, toView } from "@/lib/properties";
 import { favoriteModeFor, formatCedis } from "@/lib/utils";
@@ -50,6 +51,7 @@ export default async function HomePage() {
 
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(siteJsonLd()) }} />
       {/* ---------- Hero ---------- */}
       <section className="relative isolate overflow-hidden">
         <SafeImage

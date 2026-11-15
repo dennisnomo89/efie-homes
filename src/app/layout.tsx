@@ -5,17 +5,28 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { ToastProvider } from "@/components/ui/Toast";
 import { getCurrentUser } from "@/lib/auth";
+import { appUrl, SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE } from "@/lib/site";
 
 const sans = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
 const display = Fraunces({ subsets: ["latin"], variable: "--font-display", display: "swap" });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(appUrl()),
+  applicationName: SITE_NAME,
   title: {
-    default: "Efie Homes — Find your next home in Ghana",
-    template: "%s · Efie Homes",
+    default: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    template: `%s · ${SITE_NAME}`,
   },
-  description:
-    "Rent apartments, chamber and halls, townhouses and executive homes across Accra, Kumasi, Takoradi and beyond. Transparent prices in Ghana Cedis and clear rent advance terms.",
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    locale: "en_GH",
+    title: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    description: SITE_DESCRIPTION,
+  },
+  twitter: { card: "summary_large_image" },
+  formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = {
