@@ -1,6 +1,7 @@
 import { after } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { ok, readJson, validationFailed } from "@/lib/api";
+import { ok, readJson, tooManyAttempts, validationFailed } from "@/lib/api";
+import { checkLimit, clientIp, LIMITS, recordHits } from "@/lib/rate-limit";
 import { appUrl, sendEmail } from "@/lib/email";
 import { passwordResetEmail } from "@/lib/email-templates";
 import { createResetToken, RESET_TOKEN_MINUTES } from "@/lib/password-reset";
@@ -18,6 +19,11 @@ const GENERIC_REPLY = {
 export async function POST(req: Request) {
   const parsed = forgotPasswordSchema.safeParse(await readJson(req));
   if (!parsed.success) return validationFailed(parsed.error);
+
+  const byIp = LIMITS.forgotIp(clientIp(req));
+  const limit = await checkLimit(byIp);
+  if (!limit.ok) return tooManyAttempts(limit.retryAfterSeconds, "reset requests");
+  await recordHits([byIp.key]);
 
   const email = parsed.data.email;
   after(async () => {

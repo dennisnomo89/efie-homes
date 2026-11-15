@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
-import { requireUser } from "@/lib/auth";
+import { dashboardFor, requireUser } from "@/lib/auth";
 
-// Middleware normally handles this redirect; this is a server-side fallback.
+/** /dashboard sends each person to their own dashboard, based on their current role in the database. */
 export default async function DashboardIndex() {
   const user = await requireUser();
-  redirect(user.role === "ADMIN" ? "/dashboard/admin" : user.role === "TENANT" ? "/dashboard/tenant" : "/dashboard/landlord");
+  redirect(dashboardFor(user.role));
 }

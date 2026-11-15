@@ -36,3 +36,12 @@ export async function readJson(req: Request): Promise<unknown> {
     return null;
   }
 }
+
+/** 429 response with a Retry-After header and a friendly message. */
+export function tooManyAttempts(retryAfterSeconds: number, what = "attempts") {
+  const minutes = Math.ceil(retryAfterSeconds / 60);
+  const wait = minutes <= 1 ? "a minute" : `about ${minutes} minutes`;
+  const res = NextResponse.json({ error: `Too many ${what}. Please wait ${wait} and try again.`, retryAfterSeconds }, { status: 429 });
+  res.headers.set("Retry-After", String(retryAfterSeconds));
+  return res;
+}

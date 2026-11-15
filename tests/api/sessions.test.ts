@@ -57,14 +57,18 @@ describe("signing out other devices", () => {
     const phone = await loginAs(email, "FirstPass123");
     await laptop.post("/api/auth/logout-all");
 
+    // The proxy checks the session against the database: straight to login, cookie cleared.
     const page = await phone.get("/dashboard/tenant");
     expect(page.status).toBe(307);
-    // The dashboard layout sends people back to /dashboard, which routes them to their own dashboard.
-    expect(page.headers.get("location")).toMatch(/\/api\/auth\/session-expired\?next=%2Fdashboard/);
-
-    const expired = await phone.get("/api/auth/session-expired?next=%2Fdashboard%2Ftenant");
-    expect(expired.headers.get("location")).toMatch(/\/login\?next=%2Fdashboard%2Ftenant$/);
+    expect(page.headers.get("location")).toMatch(/\/login\?next=%2Fdashboard%2Ftenant$/);
     expect(phone.loggedIn).toBe(false);
+  });
+
+  it("the session-expired fallback clears the cookie and goes to login", async () => {
+    const { c } = await freshUser("FirstPass123");
+    const expired = await c.get("/api/auth/session-expired?next=%2Fdashboard%2Ftenant");
+    expect(expired.headers.get("location")).toMatch(/\/login\?next=%2Fdashboard%2Ftenant$/);
+    expect(c.loggedIn).toBe(false);
   });
 
   it("won't redirect off-site after a revoked session", async () => {

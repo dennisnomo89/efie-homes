@@ -158,3 +158,12 @@ model SavedProperty {
 
   @@unique([userId, propertyId])
 }
+
+/// One counted attempt for rate limiting (e.g. a failed login). Old rows are pruned automatically.
+model RateLimitHit {
+  id        String   @id @default(cuid())
+  key       String
+  createdAt DateTime @default(now())
+
+  @@index([key, createdAt])
+}

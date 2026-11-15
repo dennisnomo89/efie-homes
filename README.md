@@ -178,7 +178,7 @@ Admins land on `/dashboard/admin`, where they can:
 - *On the live site:* in the Neon console for the live database, open **SQL Editor** and run
   `UPDATE "User" SET role = 'ADMIN', "isVerified" = true WHERE email = 'you@example.com';`
 
-Then log out and back in: the role is stored in the session cookie.
+The change applies on the next page load: dashboards check the role in the database, not the login cookie.
 
 ---
 
@@ -226,6 +226,25 @@ Known limitation: resetting a password doesn't sign out sessions that are alread
 - **Listing form:** landlords can drop and drag a pin (optional, must be inside Ghana).
 - **Privacy:** the exact pin is stored, but every public page and API response rounds it to 3 decimal places (about 110 m). Only the landlord's edit form shows the exact spot.
 - **Maps:** [Leaflet](https://leafletjs.com) with OpenStreetMap tiles (attribution shown on the map). OpenStreetMap's free tiles are fine for modest traffic; if Efie Homes grows large, switch the tile URL in `src/components/map/ListingsMap.tsx` to a hosted provider (e.g. MapTiler, Stadia or Carto) per [OSM's tile usage policy](https://operations.osmfoundation.org/policies/tiles/).
+
+## Security
+
+- **Passwords:** bcrypt (cost 12); login gives the same answer for a wrong email or a wrong password.
+- **Sessions:** httpOnly, SameSite=Lax JWT cookie (7 days). Each request re-checks the account and its `sessionVersion`, so password changes/resets and "Sign out everywhere" revoke old sessions, and role changes apply immediately.
+- **Rate limits** (`src/lib/rate-limit.ts`, stored in the `RateLimitHit` table so they hold across serverless instances):
+
+  | What | Limit |
+  |---|---|
+  | Failed logins per account | 10 per 15 min (cleared by a successful login) |
+  | Failed logins per network | 30 per 15 min |
+  | New accounts per network | 10 per hour |
+  | "Forgot password" per network / per account | 10 per hour / 3 per hour |
+  | Failed reset-link attempts per network | 20 per 15 min |
+  | Messages per person per thread | 30 per 10 min |
+
+  Blocked requests get `429` with a `Retry-After` header. The network address comes from `X-Real-IP` / `X-Forwarded-For`, which Vercel sets itself. If you host somewhere else, make sure your proxy overwrites these headers.
+- **Headers** (`next.config.mjs`): `frame-ancestors 'none'` + `X-Frame-Options: DENY`, HSTS, `nosniff`, `strict-origin-when-cross-origin` referrer policy, a restrictive `Permissions-Policy`, and no `X-Powered-By`.
+- **Uploads:** file type is checked from the bytes, not the name; uploaded files are served with `nosniff`.
 
 ## Messages and photo uploads
 

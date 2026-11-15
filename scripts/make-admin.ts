@@ -2,8 +2,7 @@
  *
  *   npm run make-admin -- you@example.com
  *
- * Uses the database in .env. The person must log out and back in afterwards,
- * because page routing reads the role from their session cookie.
+ * Uses the database in .env. The change applies on their next page load (roles are read from the database).
  */
 import { prisma } from "../src/lib/prisma";
 
@@ -26,7 +25,7 @@ async function main() {
   }
 
   await prisma.user.update({ where: { id: user.id }, data: { role: "ADMIN", isVerified: true } });
-  console.log(`✅ ${user.name} (${email}) is now an admin (was ${user.role}). Log out and back in to see the Admin dashboard.`);
+  console.log(`✅ ${user.name} (${email}) is now an admin (was ${user.role}). They can open /dashboard/admin straight away.`);
 }
 
 main()

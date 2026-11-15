@@ -5,8 +5,12 @@ export const DEMO_PASSWORD = "Password123";
 
 export type Res<T = any> = { status: number; body: T; headers: Headers };
 
+const randomIp = () => `10.${[0, 0, 0].map(() => Math.floor(Math.random() * 254) + 1).join(".")}`;
+
 export class Client {
   private cookie = "";
+  /** Simulated client address (the local server trusts X-Real-IP; on Vercel the platform sets it). */
+  constructor(readonly ip: string = randomIp()) {}
 
   async request<T = any>(method: string, path: string, body?: unknown, init: RequestInit = {}): Promise<Res<T>> {
     const isForm = body instanceof FormData;
@@ -18,6 +22,7 @@ export class Client {
         // FormData sets its own multipart Content-Type (with boundary).
         ...(body !== undefined && !isForm ? { "Content-Type": "application/json" } : {}),
         ...(this.cookie ? { Cookie: this.cookie } : {}),
+        "X-Real-IP": this.ip,
         ...(init.headers ?? {}),
       },
       body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),

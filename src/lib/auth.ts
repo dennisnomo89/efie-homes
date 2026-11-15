@@ -54,8 +54,13 @@ export async function requireUser(roles?: Role[], nextPath = "/dashboard"): Prom
     const next = encodeURIComponent(nextPath);
     redirect(hasCookie ? `/api/auth/session-expired?next=${next}` : `/login?next=${next}`);
   }
-  if (roles && !roles.includes(user.role as Role)) redirect("/dashboard");
+  if (roles && !roles.includes(user.role as Role)) redirect(dashboardFor(user.role));
   return user;
+}
+
+/** Each role's home dashboard. */
+export function dashboardFor(role: string): string {
+  return role === "ADMIN" ? "/dashboard/admin" : role === "LANDLORD" ? "/dashboard/landlord" : "/dashboard/tenant";
 }
 
 export async function createSession(user: { id: string; role: string; name: string; email: string; sessionVersion: number }) {

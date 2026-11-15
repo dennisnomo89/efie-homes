@@ -1,7 +1,8 @@
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { createSession } from "@/lib/auth";
-import { fail, ok, readJson, validationFailed } from "@/lib/api";
+import { fail, ok, readJson, tooManyAttempts, validationFailed } from "@/lib/api";
+import { checkLimits, clearKey, clientIp, LIMITS, recordHits } from "@/lib/rate-limit";
 import { loginSchema } from "@/lib/validations";
 
 // Used to keep response timing similar when the email does not exist.
@@ -16,10 +17,20 @@ export async function POST(req: Request) {
   if (!parsed.success) return validationFailed(parsed.error);
   const { email, password } = parsed.data;
 
+  // Stop password guessing: too many recent failures for this account or from this network.
+  const byEmail = LIMITS.loginEmail(email);
+  const byIp = LIMITS.loginIp(clientIp(req));
+  const limit = await checkLimits([byEmail, byIp]);
+  if (!limit.ok) return tooManyAttempts(limit.retryAfterSeconds, "login attempts");
+
   const user = await prisma.user.findUnique({ where: { email } });
   const valid = await bcrypt.compare(password, user?.passwordHash ?? getDummyHash());
-  if (!user || !valid) return fail("Incorrect email or password.", 401);
+  if (!user || !valid) {
+    await recordHits([byEmail.key, byIp.key]);
+    return fail("Incorrect email or password.", 401);
+  }
 
+  await clearKey(byEmail.key);
   await createSession(user);
   return ok({
     user: { id: user.id, name: user.name, email: user.email, role: user.role },
