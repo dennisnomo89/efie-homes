@@ -530,7 +530,6 @@ async function main() {
     prisma.user.create({ data: { name: "Kofi Adjei", email: "kofi@efiehomes.test", phone: "0271112233", role: "TENANT", passwordHash } }),
     prisma.user.create({ data: { name: "Abena Darko", email: "abena@efiehomes.test", phone: "0501234567", role: "TENANT", passwordHash } }),
   ]);
-  void admin;
 
   const landlords = { kwame, akosua, yaw, efua };
 
@@ -739,6 +738,18 @@ async function main() {
       },
     });
   }
+
+  // A few in-app notifications so the bell isn't empty in the demo.
+  const hoursAgo = (h: number) => new Date(Date.now() - h * 3_600_000);
+  await prisma.notification.createMany({
+    data: [
+      { userId: kwame.id, type: "VIEWING_REQUESTED", title: "Abena Darko wants to view Neat 2-Bedroom Apartment, Spintex Road (Coca-Cola Area)", body: "Viewing request · 16:00", url: "/dashboard/landlord", createdAt: hoursAgo(3) },
+      { userId: kwame.id, type: "REVIEW_RECEIVED", title: "Abena Darko reviewed you: 5/5", body: "Kwame was on time and answered all my questions about water and the ECG meter.", url: "/dashboard/landlord#reviews", createdAt: daysFromNow(-19), readAt: daysFromNow(-18) },
+      { userId: ama.id, type: "VIEWING_ANSWERED", title: "Viewing confirmed: Modern 3-Bedroom Townhouse with Pool Access, East Legon", body: "Confirmed. Please call when you reach the American House junction.", url: "/dashboard/tenant#viewings", createdAt: hoursAgo(20) },
+      { userId: ama.id, type: "PRICE_DROP", title: `Price drop: ${labone.title}`, body: "A home on your wishlist is now cheaper", url: `/properties/${labone.id}`, createdAt: daysFromNow(-4) },
+      { userId: admin.id, type: "LISTING_REPORTED", title: "Listing reported: Executive 5-Bedroom Mansion with Boys' Quarters, Trasacco Valley", body: "Looks like a scam", url: "/dashboard/admin#reports", createdAt: daysFromNow(-1) },
+    ],
+  });
 
   // Open reports, so the admin queue has something in it.
   await prisma.listingReport.createMany({

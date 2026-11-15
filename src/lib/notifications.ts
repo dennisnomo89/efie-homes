@@ -1,17 +1,18 @@
 import { prisma } from "./prisma";
 import { appUrl, sendEmail } from "./email";
+import { pushNotification } from "./inbox";
 import { listingReportedEmail, newMessageEmail, wishlistUpdateEmail, reviewReceivedEmail, savedSearchAlertEmail, viewingAnsweredEmail, viewingCancelledEmail, viewingRequestedEmail } from "./email-templates";
 import { propertyTypeLabel, reportReasonLabel } from "./constants";
 import { ALERT_THROTTLE_MS, filtersFromQuery, listingMatches, unsubscribeToken } from "./saved-searches";
-import { parseJsonArray } from "./utils";
+import { formatCedis, formatDate, parseJsonArray } from "./utils";
 import { WISHLIST_ALERT_THROTTLE_MS, wishlistUnsubscribeToken } from "./wishlist-alerts";
 
-/* Each function loads what it needs and sends one email. They never throw (sendEmail swallows errors),
+/* Each function loads what it needs, adds an in-app notification (the navbar bell) and sends one email. They never throw (sendEmail swallows errors),
  * so they are safe to run with next/server's after() once the response has been sent. */
 
 const viewingInclude = {
   tenant: { select: { name: true, email: true } },
-  property: { select: { id: true, title: true, landlord: { select: { name: true, email: true, phone: true } } } },
+  property: { select: { id: true, title: true, landlordId: true, landlord: { select: { name: true, email: true, phone: true } } } },
 } as const;
 
 /** Tells the landlord a tenant wants to view their property. */
@@ -19,6 +20,12 @@ export async function notifyViewingRequested(viewingId: string) {
   try {
     const v = await prisma.viewingRequest.findUnique({ where: { id: viewingId }, include: viewingInclude });
     if (!v) return;
+    await pushNotification(v.property.landlordId, {
+      type: "VIEWING_REQUESTED",
+      title: `${v.tenant.name} wants to view ${v.property.title}`,
+      body: `${formatDate(v.preferredDate, { weekday: "short", day: "numeric", month: "short" })} at ${v.preferredTime}`,
+      url: "/dashboard/landlord",
+    });
     const email = viewingRequestedEmail({
       landlordName: v.property.landlord.name,
       tenantName: v.tenant.name,
@@ -40,6 +47,12 @@ export async function notifyViewingAnswered(viewingId: string) {
   try {
     const v = await prisma.viewingRequest.findUnique({ where: { id: viewingId }, include: viewingInclude });
     if (!v || (v.status !== "CONFIRMED" && v.status !== "DECLINED")) return;
+    await pushNotification(v.tenantId, {
+      type: "VIEWING_ANSWERED",
+      title: `Viewing ${v.status === "CONFIRMED" ? "confirmed" : "declined"}: ${v.property.title}`,
+      body: v.landlordNote ?? `${formatDate(v.preferredDate, { weekday: "short", day: "numeric", month: "short" })} at ${v.preferredTime}`,
+      url: "/dashboard/tenant#viewings",
+    });
     const email = viewingAnsweredEmail({
       tenantName: v.tenant.name,
       landlordName: v.property.landlord.name,
@@ -59,6 +72,7 @@ export async function notifyViewingAnswered(viewingId: string) {
 }
 
 export type CancelledViewing = {
+  landlordId: string;
   landlordName: string;
   landlordEmail: string;
   tenantName: string;
@@ -69,6 +83,12 @@ export type CancelledViewing = {
 
 /** Tells the landlord a tenant withdrew a pending request (the row is already deleted, so data is passed in). */
 export async function notifyViewingCancelled(v: CancelledViewing) {
+  await pushNotification(v.landlordId, {
+    type: "VIEWING_CANCELLED",
+    title: `${v.tenantName} cancelled their viewing request`,
+    body: v.propertyTitle,
+    url: "/dashboard/landlord",
+  });
   const email = viewingCancelledEmail({
     landlordName: v.landlordName,
     tenantName: v.tenantName,
@@ -101,6 +121,19 @@ export async function notifyNewMessage(messageId: string) {
       },
     });
     if (!m) return;
+
+    const thread = m.viewingRequest;
+    const toTenantInApp = m.senderId !== thread.tenantId;
+    await pushNotification(
+      toTenantInApp ? thread.tenantId : thread.property.landlordId,
+      {
+        type: "NEW_MESSAGE",
+        title: `${m.sender.name} sent you a message`,
+        body: `${thread.property.title}: ${m.body}`,
+        url: `/dashboard/${toTenantInApp ? "tenant" : "landlord"}?thread=${thread.id}`,
+      },
+      { collapse: true },
+    );
 
     const earlierUnread = await prisma.message.count({
       where: {
@@ -155,6 +188,12 @@ export async function notifySavedSearchMatches(propertyId: string): Promise<numb
       });
       if (count === 0) continue;
 
+      await pushNotification(s.userId, {
+        type: "SEARCH_MATCH",
+        title: `New home for "${s.name}"`,
+        body: `${p.title} · ${formatCedis(p.monthlyRent)}/month`,
+        url: `/properties/${p.id}`,
+      });
       const unsubscribeUrl = `${appUrl()}/api/saved-searches/${s.id}/unsubscribe?token=${unsubscribeToken(s.id)}`;
       const email = savedSearchAlertEmail({
         name: s.user.name,
@@ -194,6 +233,12 @@ export async function notifyReviewReceived(reviewId: string) {
       include: { tenant: { select: { name: true } }, landlord: { select: { name: true, email: true } } },
     });
     if (!r) return;
+    await pushNotification(r.landlordId, {
+      type: "REVIEW_RECEIVED",
+      title: `${r.tenant.name} reviewed you: ${r.landlordRating}/5`,
+      body: r.comment ?? r.propertyTitle,
+      url: "/dashboard/landlord#reviews",
+    });
     const email = reviewReceivedEmail({
       landlordName: r.landlord.name,
       tenantName: r.tenant.name,
@@ -218,9 +263,19 @@ export async function notifyListingReported(reportId: string) {
     });
     if (!r) return;
     const [admins, openReports] = await Promise.all([
-      prisma.user.findMany({ where: { role: "ADMIN" }, select: { name: true, email: true } }),
+      prisma.user.findMany({ where: { role: "ADMIN" }, select: { id: true, name: true, email: true } }),
       prisma.listingReport.count({ where: { propertyId: r.propertyId, status: "OPEN" } }),
     ]);
+    await pushNotification(
+      admins.map((a) => a.id),
+      {
+        type: "LISTING_REPORTED",
+        title: openReports > 1 ? `${r.property.title} has ${openReports} open reports` : `Listing reported: ${r.property.title}`,
+        body: reportReasonLabel(r.reason),
+        url: "/dashboard/admin#reports",
+      },
+      { collapse: true },
+    );
     for (const admin of admins) {
       const email = listingReportedEmail({
         adminName: admin.name,
@@ -263,6 +318,12 @@ export async function notifyWishlistChange(propertyId: string, change: WishlistC
       });
       if (count === 0) continue;
 
+      await pushNotification(s.user.id, {
+        type: change.kind === "price" ? "PRICE_DROP" : "BACK_ON_MARKET",
+        title: change.kind === "price" ? `Price drop: ${p.title}` : `Available again: ${p.title}`,
+        body: change.kind === "price" ? `Now ${formatCedis(change.to)}/month (was ${formatCedis(change.from)})` : `${formatCedis(p.monthlyRent)}/month`,
+        url: `/properties/${p.id}`,
+      });
       const unsubscribeUrl = `${appUrl()}/api/wishlist-alerts/unsubscribe?u=${s.user.id}&token=${wishlistUnsubscribeToken(s.user.id)}`;
       const email = wishlistUpdateEmail({
         name: s.user.name,

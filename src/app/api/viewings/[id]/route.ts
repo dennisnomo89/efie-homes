@@ -43,7 +43,7 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     where: { id },
     include: {
       tenant: { select: { name: true } },
-      property: { select: { title: true, landlord: { select: { name: true, email: true } } } },
+      property: { select: { title: true, landlordId: true, landlord: { select: { name: true, email: true } } } },
     },
   });
   if (!viewing) return fail("Viewing request not found.", 404);
@@ -55,6 +55,7 @@ export async function DELETE(_req: Request, { params }: Ctx) {
   await prisma.viewingRequest.delete({ where: { id } });
   after(() =>
     notifyViewingCancelled({
+      landlordId: viewing.property.landlordId,
       landlordName: viewing.property.landlord.name,
       landlordEmail: viewing.property.landlord.email,
       tenantName: viewing.tenant.name,

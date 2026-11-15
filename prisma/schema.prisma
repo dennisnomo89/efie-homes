@@ -45,6 +45,7 @@ model User {
   reviewsWritten      Review[]             @relation("ReviewAuthor")
   reviewsReceived     Review[]             @relation("ReviewLandlord")
   listingReports      ListingReport[]
+  notifications       Notification[]
 }
 
 model Property {
@@ -264,4 +265,23 @@ model PropertyViewDay {
   views      Int      @default(0)
 
   @@id([propertyId, day])
+}
+
+/// In-app notification (the bell in the navbar), created alongside the matching email.
+model Notification {
+  id        String    @id @default(cuid())
+  /// VIEWING_REQUESTED | VIEWING_ANSWERED | VIEWING_CANCELLED | NEW_MESSAGE | REVIEW_RECEIVED | PRICE_DROP | BACK_ON_MARKET | SEARCH_MATCH | LISTING_REPORTED
+  type      String
+  title     String
+  body      String?
+  /// Where clicking it takes you (a path on this site)
+  url       String
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
 }

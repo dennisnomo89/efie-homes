@@ -1,4 +1,5 @@
 import { after } from "next/server";
+import { markReadByUrl } from "@/lib/inbox";
 import { prisma } from "@/lib/prisma";
 import { fail, guard, ok, readJson, validationFailed } from "@/lib/api";
 import { MESSAGE_RATE_LIMIT, MESSAGE_RATE_WINDOW_MS, threadAccess } from "@/lib/messages";
@@ -20,10 +21,14 @@ export async function GET(_req: Request, { params }: Ctx) {
 
   // Admins read for moderation without marking anything as read.
   if (access.role !== "admin") {
-    await prisma.message.updateMany({
-      where: { viewingRequestId: id, senderId: { not: g.session.sub }, readAt: null },
-      data: { readAt: new Date() },
-    });
+    await Promise.all([
+      prisma.message.updateMany({
+        where: { viewingRequestId: id, senderId: { not: g.session.sub }, readAt: null },
+        data: { readAt: new Date() },
+      }),
+      // Reading the thread also clears its "new message" notification.
+      markReadByUrl(g.session.sub, `/dashboard/${access.role === "tenant" ? "tenant" : "landlord"}?thread=${id}`),
+    ]);
   }
 
   const messages = await prisma.message.findMany({

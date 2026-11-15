@@ -196,6 +196,13 @@ The change applies on the next page load: dashboards check the role in the datab
 - **Amenities:** ECG Prepaid Meter, Ghana Water (GWCL) Flow, Borehole/Polytank Backup, Standby Generator/Solar, Walled & Gated, 24/7 Security, POP Ceiling, Air Conditioning, Parking Space.
 - **Phone validation:** Ghanaian numbers such as `024 123 4567` or `+233 24 123 4567`.
 
+## In-app notifications (the bell)
+
+- Signed-in users get a bell in the navbar with an unread count and the latest 20 notifications; clicking one opens the related page and marks it read, and "Mark all as read" clears the lot. It refreshes on every page change and every minute while the tab is open.
+- Every email the app sends also creates a notification (`pushNotification` in `src/lib/inbox.ts`), so people hear about viewing requests and answers, cancelled requests, new messages, reviews, price drops, homes back on the market, saved-search matches and (admins) reported listings even when email isn't configured or lands in spam.
+- A busy message thread shows as one unread item that updates, and opening the thread clears it. Read notifications older than 90 days are pruned now and then.
+- API: `GET /api/notifications`, `PATCH /api/notifications` `{ all: true }` or `{ ids: [...] }` (only your own).
+
 ## Email notifications
 
 Efie Homes sends these emails:

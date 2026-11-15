@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { Logo } from "./Logo";
+import { NotificationBell } from "./NotificationBell";
 import { useToast } from "./ui/Toast";
 import { Portal } from "./ui/Portal";
 import { useDialogFocus } from "./ui/useDialogFocus";
@@ -114,7 +115,10 @@ export function Navbar({ user }: { user: NavUser }) {
           ))}
         </div>
 
-        <div className="hidden items-center gap-2 lg:flex">
+        <div className="-mr-2 flex items-center gap-1 lg:mr-0 lg:gap-2">
+          {/* One bell for every screen size (so it polls once). */}
+          {user && <NotificationBell />}
+          <div className="hidden items-center gap-2 lg:flex">
           {user ? (
             <div className="relative" ref={menuRef}>
               <button
@@ -155,16 +159,16 @@ export function Navbar({ user }: { user: NavUser }) {
               </Link>
             </>
           )}
+          </div>
+          <button
+            className="flex h-11 w-11 items-center justify-center rounded-xl text-ink hover:bg-stone-100 lg:hidden"
+            onClick={() => setDrawerOpen(true)}
+            aria-label="Open menu"
+            aria-expanded={drawerOpen}
+          >
+            <Menu className="h-6 w-6" />
+          </button>
         </div>
-
-        <button
-          className="-mr-2 flex h-11 w-11 items-center justify-center rounded-xl text-ink hover:bg-stone-100 lg:hidden"
-          onClick={() => setDrawerOpen(true)}
-          aria-label="Open menu"
-          aria-expanded={drawerOpen}
-        >
-          <Menu className="h-6 w-6" />
-        </button>
       </nav>
 
       {/* Mobile drawer */}
