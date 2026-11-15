@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Building2, Eye, EyeOff, KeyRound, Loader2, UserRound } from "lucide-react";
+import { Building2, Eye, EyeOff, KeyRound, Loader2, MailCheck, UserRound } from "lucide-react";
 import { useToast } from "./ui/Toast";
-import { fieldErrors, loginSchema, registerSchema } from "@/lib/validations";
+import { fieldErrors, forgotPasswordSchema, loginSchema, registerSchema, resetPasswordSchema } from "@/lib/validations";
 import { cn } from "@/lib/utils";
 
 function safeNext(next: string | undefined, fallback: string) {
@@ -60,6 +60,11 @@ export function LoginForm({ next }: { next?: string }) {
       <Field label="Password" error={errors.password}>
         <PasswordInput value={form.password} onChange={(v) => setForm({ ...form, password: v })} invalid={!!errors.password} autoComplete="current-password" />
       </Field>
+      <div className="-mt-2 text-right">
+        <Link href="/forgot-password" className="text-sm font-medium text-forest-800 hover:underline">
+          Forgot password?
+        </Link>
+      </div>
       <button type="submit" disabled={loading} className="btn btn-primary w-full">
         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />} Log in
       </button>
@@ -157,6 +162,140 @@ export function RegisterForm({ defaultRole, next }: { defaultRole: "TENANT" | "L
           Log in
         </Link>
       </p>
+    </form>
+  );
+}
+
+export function ForgotPasswordForm() {
+  const [email, setEmail] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
+  const [sentTo, setSentTo] = useState<string | null>(null);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    const parsed = forgotPasswordSchema.safeParse({ email });
+    if (!parsed.success) return setErrors(fieldErrors(parsed.error));
+    setLoading(true);
+    const res = await fetch("/api/auth/forgot-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setLoading(false);
+    if (!res.ok) return setErrors(data.errors ?? { _form: data.error ?? "Something went wrong" });
+    setSentTo(parsed.data.email);
+  }
+
+  if (sentTo) {
+    return (
+      <div className="space-y-4 text-center">
+        <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-forest-50 text-forest-700">
+          <MailCheck className="h-6 w-6" />
+        </span>
+        <p className="text-sm text-stone-700">
+          If an account exists for <strong>{sentTo}</strong>, we&rsquo;ve sent a link to reset the password. It works once and expires in 60
+          minutes.
+        </p>
+        <p className="text-xs text-stone-500">Can&rsquo;t find it? Check your spam folder, or wait a minute and try again.</p>
+        <Link href="/login" className="btn btn-outline w-full">
+          Back to log in
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={submit} className="space-y-4" noValidate>
+      {errors._form && <p className="rounded-xl bg-red-50 p-3 text-sm font-medium text-red-700">{errors._form}</p>}
+      <Field label="Email" error={errors.email}>
+        <input
+          type="email"
+          autoComplete="email"
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            setErrors({});
+          }}
+          className={cn("input", errors.email && "input-error")}
+          placeholder="you@example.com"
+        />
+      </Field>
+      <button type="submit" disabled={loading} className="btn btn-primary w-full">
+        {loading && <Loader2 className="h-4 w-4 animate-spin" />} Send reset link
+      </button>
+      <p className="text-center text-sm text-stone-600">
+        Remembered it?{" "}
+        <Link href="/login" className="font-semibold text-forest-800 hover:underline">
+          Log in
+        </Link>
+      </p>
+    </form>
+  );
+}
+
+export function ResetPasswordForm({ token }: { token: string }) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    const parsed = resetPasswordSchema.safeParse({ token, password });
+    if (!parsed.success) return setErrors(fieldErrors(parsed.error));
+    if (password !== confirm) return setErrors({ confirm: "The passwords don't match" });
+    setLoading(true);
+    const res = await fetch("/api/auth/reset-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, password }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setLoading(false);
+    if (!res.ok) return setErrors(data.errors?.password ? data.errors : { _form: data.error ?? "Something went wrong" });
+    toast({ title: "Password changed", description: "Log in with your new password." });
+    router.push("/login");
+  }
+
+  return (
+    <form onSubmit={submit} className="space-y-4" noValidate>
+      {(errors._form || errors.token) && (
+        <div className="rounded-xl bg-red-50 p-3 text-sm font-medium text-red-700">
+          {errors._form ?? errors.token}{" "}
+          <Link href="/forgot-password" className="underline">
+            Request a new link
+          </Link>
+        </div>
+      )}
+      <Field label="New password" error={errors.password} hint="At least 8 characters, with a letter and a number.">
+        <PasswordInput
+          value={password}
+          onChange={(v) => {
+            setPassword(v);
+            setErrors({});
+          }}
+          invalid={!!errors.password}
+          autoComplete="new-password"
+        />
+      </Field>
+      <Field label="Confirm new password" error={errors.confirm}>
+        <PasswordInput
+          value={confirm}
+          onChange={(v) => {
+            setConfirm(v);
+            setErrors({});
+          }}
+          invalid={!!errors.confirm}
+          autoComplete="new-password"
+        />
+      </Field>
+      <button type="submit" disabled={loading} className="btn btn-primary w-full">
+        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />} Set new password
+      </button>
     </form>
   );
 }

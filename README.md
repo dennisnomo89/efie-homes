@@ -143,6 +143,8 @@ All endpoints take and return JSON. Validation failures return `422` with `{ err
 | `POST /api/auth/register` | — | `{ name, email, phone?, password, role: "TENANT" \| "LANDLORD" }` |
 | `POST /api/auth/login` | — | `{ email, password }` → sets the `efie_token` cookie |
 | `POST /api/auth/logout` | — | Clears the cookie |
+| `POST /api/auth/forgot-password` | — | `{ email }` → always the same reply; emails a one-time link if the account exists (max 3 per hour) |
+| `POST /api/auth/reset-password` | — | `{ token, password }` → sets the new password; the link works once and expires after 60 minutes |
 | `GET /api/auth/me` | optional | Current user or `null` |
 | `GET /api/properties` | — | Query: `location, region, type, minPrice, maxPrice, advance, bedrooms, bathrooms, amenities=A,B, furnished, sort, page` |
 | `POST /api/properties` | Landlord/Admin | Full property payload |
@@ -189,6 +191,34 @@ Then log out and back in: the role is stored in the session cookie.
 - **Amenities:** ECG Prepaid Meter, Ghana Water (GWCL) Flow, Borehole/Polytank Backup, Standby Generator/Solar, Walled & Gated, 24/7 Security, POP Ceiling, Air Conditioning, Parking Space.
 - **Phone validation:** Ghanaian numbers such as `024 123 4567` or `+233 24 123 4567`.
 
+## Email notifications
+
+Efie Homes sends these emails:
+
+| When | To |
+|---|---|
+| A tenant requests a viewing | The landlord (reply-to: the tenant) |
+| A tenant cancels a pending request | The landlord |
+| The landlord confirms or declines | The tenant (reply-to: the landlord; includes the landlord's phone only when confirmed) |
+| Someone uses "Forgot password?" | The account's email, with a one-time link valid for 60 minutes |
+
+Emails are sent after the response (`after()` from `next/server`), so a slow or failing email service never breaks a request.
+
+**How sending is chosen** (`src/lib/email.ts`):
+
+1. `RESEND_API_KEY` set → sent through [Resend](https://resend.com).
+2. Otherwise, `EMAIL_OUTBOX_DIR` set → saved as JSON files in that folder (good for local development; the API tests read them).
+3. Otherwise → only logged. In production the body is not logged, because it can contain reset links.
+
+**Turning on real email (Resend):**
+
+1. Create a free account at [resend.com](https://resend.com) and create an API key with "Sending access".
+2. In Vercel → your project → **Settings → Environment Variables**, add `RESEND_API_KEY`, then redeploy.
+3. Until you verify a domain in Resend, emails come from `onboarding@resend.dev` and Resend only delivers them **to your own Resend account email**. To email real users, add and verify your domain in Resend (it gives you DNS records to add), then set `EMAIL_FROM`, e.g. `Efie Homes <notifications@yourdomain.com>`.
+4. Optional: set `APP_URL` if the site has its own domain; otherwise links use Vercel's production domain.
+
+Known limitation: resetting a password doesn't sign out sessions that are already logged in elsewhere (sessions are stateless 7-day tokens).
+
 ## Testing
 
 Tests use [Vitest](https://vitest.dev) and live in `tests/`.
@@ -202,7 +232,7 @@ Tests use [Vitest](https://vitest.dev) and live in `tests/`.
   npm run build && npm start        # in one terminal
   npm run test:api                  # in another
   ```
-  Set `API_BASE_URL` to test a different address. Listings the tests create are deleted afterwards. Registration tests leave a few `@efiehomes.test` accounts behind; re-seeding removes them. **Never point the API tests at the live site.**
+  To include the email tests, start the server and run the tests with `EMAIL_OUTBOX_DIR=.email-outbox` (and no `RESEND_API_KEY`); otherwise they're skipped. Set `API_BASE_URL` to test a different address. Listings the tests create are deleted afterwards. Registration tests leave a few `@efiehomes.test` accounts behind; re-seeding removes them. **Never point the API tests at the live site.**
 
 **On GitHub:** `.github/workflows/ci.yml` runs on every push to `main` and on pull requests. It starts a throwaway PostgreSQL database, then typechecks, runs the unit tests, migrates and seeds, builds, starts the app and runs the API tests. Results appear on the repository's **Actions** tab and as ✓ / ✗ next to each commit.
 

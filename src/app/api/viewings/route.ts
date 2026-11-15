@@ -1,5 +1,7 @@
+import { after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { fail, guard, ok, readJson, validationFailed } from "@/lib/api";
+import { notifyViewingRequested } from "@/lib/notifications";
 import { viewingRequestSchema } from "@/lib/validations";
 
 const propertySummary = {
@@ -60,5 +62,6 @@ export async function POST(req: Request) {
       message,
     },
   });
+  after(() => notifyViewingRequested(viewing.id));
   return ok({ viewing }, 201);
 }

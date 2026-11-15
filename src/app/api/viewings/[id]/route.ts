@@ -1,5 +1,7 @@
+import { after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { fail, guard, ok, readJson, validationFailed } from "@/lib/api";
+import { notifyViewingAnswered, notifyViewingCancelled } from "@/lib/notifications";
 import { viewingStatusSchema } from "@/lib/validations";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -26,6 +28,8 @@ export async function PATCH(req: Request, { params }: Ctx) {
     where: { id },
     data: { status: parsed.data.status, landlordNote: parsed.data.landlordNote || null },
   });
+  // Only email the tenant when the answer actually changes.
+  if (viewing.status !== updated.status) after(() => notifyViewingAnswered(updated.id));
   return ok({ viewing: updated });
 }
 
@@ -35,7 +39,13 @@ export async function DELETE(_req: Request, { params }: Ctx) {
   if (g.response) return g.response;
   const { id } = await params;
 
-  const viewing = await prisma.viewingRequest.findUnique({ where: { id }, select: { tenantId: true, status: true } });
+  const viewing = await prisma.viewingRequest.findUnique({
+    where: { id },
+    include: {
+      tenant: { select: { name: true } },
+      property: { select: { title: true, landlord: { select: { name: true, email: true } } } },
+    },
+  });
   if (!viewing) return fail("Viewing request not found.", 404);
   if (viewing.tenantId !== g.session.sub && g.session.role !== "ADMIN") {
     return fail("You can only cancel your own requests.", 403);
@@ -43,5 +53,15 @@ export async function DELETE(_req: Request, { params }: Ctx) {
   if (viewing.status !== "PENDING") return fail("Only pending requests can be cancelled.", 409);
 
   await prisma.viewingRequest.delete({ where: { id } });
+  after(() =>
+    notifyViewingCancelled({
+      landlordName: viewing.property.landlord.name,
+      landlordEmail: viewing.property.landlord.email,
+      tenantName: viewing.tenant.name,
+      propertyTitle: viewing.property.title,
+      preferredDate: viewing.preferredDate,
+      preferredTime: viewing.preferredTime,
+    }),
+  );
   return ok({ success: true });
 }

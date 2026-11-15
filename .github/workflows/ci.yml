@@ -39,6 +39,8 @@ jobs:
       DATABASE_URL_UNPOOLED: postgresql://efie:efie@localhost:5432/efie_test
       JWT_SECRET: ci-only-secret-not-used-anywhere-else-0123456789
       NEXT_TELEMETRY_DISABLED: "1"
+      # Emails are written here instead of being sent; the API tests read them back.
+      EMAIL_OUTBOX_DIR: .email-outbox
 
     steps:
       - uses: actions/checkout@v4

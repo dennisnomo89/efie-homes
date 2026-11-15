@@ -23,25 +23,37 @@ const optionalGhanaPhone = z
   .optional()
   .transform((v) => (v ? v : undefined));
 
+/** Same strength rule everywhere a password is chosen. */
+export const newPasswordRule = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .max(100, "Password must be at most 100 characters")
+  .regex(/[A-Za-z]/, "Password must contain a letter")
+  .regex(/[0-9]/, "Password must contain a number");
+
+const emailRule = z.string().trim().toLowerCase().email("Enter a valid email address");
+
 export const registerSchema = z.object({
   name: z.string().trim().min(2, "Please enter your full name").max(80),
-  email: z.string().trim().toLowerCase().email("Enter a valid email address"),
+  email: emailRule,
   phone: optionalGhanaPhone,
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters")
-    .max(100)
-    .regex(/[A-Za-z]/, "Password must contain a letter")
-    .regex(/[0-9]/, "Password must contain a number"),
+  password: newPasswordRule,
   role: z.enum(["TENANT", "LANDLORD"], { error: "Choose an account type" }),
 });
 export type RegisterInput = z.input<typeof registerSchema>;
 
 export const loginSchema = z.object({
-  email: z.string().trim().toLowerCase().email("Enter a valid email address"),
+  email: emailRule,
   password: z.string().min(1, "Enter your password"),
 });
 export type LoginInput = z.input<typeof loginSchema>;
+
+export const forgotPasswordSchema = z.object({ email: emailRule });
+
+export const resetPasswordSchema = z.object({
+  token: z.string().trim().min(20, "This reset link is invalid").max(200, "This reset link is invalid"),
+  password: newPasswordRule,
+});
 
 const wholeNumber = (label: string, min: number, max: number) =>
   z.coerce

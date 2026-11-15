@@ -35,6 +35,7 @@ model User {
   properties      Property[]
   viewingRequests ViewingRequest[]
   savedProperties SavedProperty[]
+  passwordResetTokens PasswordResetToken[]
 }
 
 model Property {
@@ -106,6 +107,20 @@ model ViewingRequest {
   @@index([propertyId])
   @@index([tenantId])
   @@index([status])
+}
+
+/// One-time password reset links. Only a SHA-256 hash of the token is stored.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model SavedProperty {
