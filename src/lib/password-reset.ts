@@ -52,7 +52,8 @@ export async function resetPasswordWithToken(token: string, newPassword: string)
   const claimed = await prisma.$transaction(async (tx) => {
     const { count } = await tx.passwordResetToken.updateMany({ where: { id: record.id, usedAt: null }, data: { usedAt: now } });
     if (count === 0) return false;
-    await tx.user.update({ where: { id: record.userId }, data: { passwordHash } });
+    // New password + new session version: every device that was logged in is signed out.
+    await tx.user.update({ where: { id: record.userId }, data: { passwordHash, sessionVersion: { increment: 1 } } });
     await tx.passwordResetToken.updateMany({ where: { userId: record.userId, usedAt: null }, data: { usedAt: now } });
     return true;
   });

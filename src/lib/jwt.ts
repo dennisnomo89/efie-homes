@@ -10,6 +10,8 @@ export type SessionPayload = {
   role: Role;
   name: string;
   email: string;
+  /** The user's sessionVersion when this token was issued; a mismatch means it was revoked. */
+  sv: number;
 };
 
 function getSecret(): Uint8Array {
@@ -21,7 +23,7 @@ function getSecret(): Uint8Array {
 }
 
 export async function signToken(payload: SessionPayload): Promise<string> {
-  return new SignJWT({ role: payload.role, name: payload.name, email: payload.email })
+  return new SignJWT({ role: payload.role, name: payload.name, email: payload.email, sv: payload.sv })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(payload.sub)
     .setIssuedAt()
@@ -29,6 +31,10 @@ export async function signToken(payload: SessionPayload): Promise<string> {
     .sign(getSecret());
 }
 
+/**
+ * Checks the signature and expiry only. The middleware uses this as a fast pre-check;
+ * server code must use getSession() (src/lib/auth.ts), which also checks the token wasn't revoked.
+ */
 export async function verifyToken(token: string): Promise<SessionPayload | null> {
   try {
     const { payload } = await jwtVerify(token, getSecret(), { algorithms: ["HS256"] });
@@ -38,6 +44,8 @@ export async function verifyToken(token: string): Promise<SessionPayload | null>
       role: payload.role as Role,
       name: String(payload.name ?? ""),
       email: String(payload.email ?? ""),
+      // Tokens issued before session versions existed count as version 0.
+      sv: typeof payload.sv === "number" ? payload.sv : 0,
     };
   } catch {
     return null;

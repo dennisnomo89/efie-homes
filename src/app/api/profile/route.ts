@@ -23,13 +23,19 @@ export async function PATCH(req: Request) {
     passwordHash = await bcrypt.hash(newPassword, 12);
   }
 
-  const updated = await prisma.user.update({
+  const { sessionVersion, ...updated } = await prisma.user.update({
     where: { id: user.id },
-    data: { name, phone: phone ?? null, avatarUrl: avatarUrl ?? null, ...(passwordHash ? { passwordHash } : {}) },
-    select: publicUserSelect,
+    data: {
+      name,
+      phone: phone ?? null,
+      avatarUrl: avatarUrl ?? null,
+      // A new password signs out every other device.
+      ...(passwordHash ? { passwordHash, sessionVersion: { increment: 1 } } : {}),
+    },
+    select: { ...publicUserSelect, sessionVersion: true },
   });
 
-  // Refresh the session so the navbar shows the new name.
-  await createSession(updated);
-  return ok({ user: updated });
+  // Re-issue this device's session (new name, and the new session version after a password change).
+  await createSession({ ...updated, sessionVersion });
+  return ok({ user: updated, signedOutOtherDevices: Boolean(passwordHash) });
 }

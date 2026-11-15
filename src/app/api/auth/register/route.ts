@@ -13,11 +13,11 @@ export async function POST(req: Request) {
   if (existing) return fail("An account with this email already exists.", 409, { email: "This email is already registered" });
 
   const passwordHash = await bcrypt.hash(password, 12);
-  const user = await prisma.user.create({
+  const { sessionVersion, ...user } = await prisma.user.create({
     data: { name, email, phone, passwordHash, role },
-    select: publicUserSelect,
+    select: { ...publicUserSelect, sessionVersion: true },
   });
 
-  await createSession(user);
+  await createSession({ ...user, sessionVersion });
   return ok({ user }, 201);
 }

@@ -52,7 +52,18 @@ describe("favoriteModeFor", () => {
 });
 
 describe("session tokens", () => {
-  const payload = { sub: "user_1", role: "TENANT" as const, name: "Ama", email: "ama@example.com" };
+  const payload = { sub: "user_1", role: "TENANT" as const, name: "Ama", email: "ama@example.com", sv: 3 };
+
+  it("treats tokens issued before session versions as version 0", async () => {
+    const { SignJWT } = await import("jose");
+    const legacy = await new SignJWT({ role: "TENANT", name: "Ama", email: "ama@example.com" })
+      .setProtectedHeader({ alg: "HS256" })
+      .setSubject("user_1")
+      .setIssuedAt()
+      .setExpirationTime("1h")
+      .sign(new TextEncoder().encode(process.env.JWT_SECRET));
+    expect((await verifyToken(legacy))?.sv).toBe(0);
+  });
 
   it("round-trips a session", async () => {
     expect(await verifyToken(await signToken(payload))).toEqual(payload);

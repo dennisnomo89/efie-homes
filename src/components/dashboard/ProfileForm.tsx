@@ -2,8 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, LogOut, Save } from "lucide-react";
 import { useToast } from "../ui/Toast";
+import { ConfirmButton } from "../ui/ConfirmButton";
 import { fieldErrors, profileSchema } from "@/lib/validations";
 import { cn } from "@/lib/utils";
 
@@ -39,7 +40,21 @@ export function ProfileForm({ initial }: Props) {
       return;
     }
     setV((s) => ({ ...s, currentPassword: "", newPassword: "" }));
-    toast({ title: "Profile updated", description: v.newPassword ? "Your password has been changed." : undefined });
+    toast({
+      title: "Profile updated",
+      description: data.signedOutOtherDevices ? "Password changed. Any other devices have been signed out." : undefined,
+    });
+    router.refresh();
+  }
+
+  async function signOutEverywhere() {
+    const res = await fetch("/api/auth/logout-all", { method: "POST" });
+    if (!res.ok) {
+      toast({ title: "Couldn't sign out", description: "Please try again.", variant: "error" });
+      return;
+    }
+    toast({ title: "Signed out everywhere", description: "Log in again on the devices you use." });
+    router.push("/login");
     router.refresh();
   }
 
@@ -72,11 +87,28 @@ export function ProfileForm({ initial }: Props) {
         <Field label="New password" error={errors.newPassword} hint="At least 8 characters, with a letter and a number.">
           <input type="password" value={v.newPassword} onChange={(e) => set("newPassword", e.target.value)} className={cn("input", errors.newPassword && "input-error")} autoComplete="new-password" />
         </Field>
+        <p className="text-xs text-stone-500">Changing your password signs you out on every other device.</p>
         <div className="mt-auto pt-2">
           <button type="submit" disabled={saving} className="btn btn-primary w-full sm:w-auto">
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save changes
           </button>
         </div>
+      </section>
+
+      <section className="card flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6 lg:col-span-2">
+        <div>
+          <h2 className="text-lg font-semibold">Signed in somewhere you don&rsquo;t recognise?</h2>
+          <p className="text-sm text-stone-600">Sign out of Efie Homes on every phone and computer, including this one.</p>
+        </div>
+        <ConfirmButton
+          title="Sign out everywhere?"
+          description="You'll be signed out on every device, including this one, and will need to log in again."
+          confirmLabel="Sign out everywhere"
+          onConfirm={signOutEverywhere}
+          className="btn btn-outline shrink-0 text-red-600"
+        >
+          <LogOut className="h-4 w-4" /> Sign out everywhere
+        </ConfirmButton>
       </section>
     </form>
   );

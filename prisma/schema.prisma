@@ -28,6 +28,8 @@ model User {
   role         String   @default("TENANT")
   /// Verified landlords/agents get a trust badge on their listings
   isVerified   Boolean  @default(false)
+  /// Bumped to sign the user out everywhere (password change/reset, "sign out everywhere")
+  sessionVersion Int    @default(0)
   avatarUrl    String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
