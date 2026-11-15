@@ -24,8 +24,8 @@ export async function POST(req: Request) {
   const parsed = favoriteSchema.safeParse(await readJson(req));
   if (!parsed.success) return validationFailed(parsed.error);
 
-  const exists = await prisma.property.findUnique({ where: { id: parsed.data.propertyId }, select: { id: true } });
-  if (!exists) return fail("Property not found.", 404);
+  const exists = await prisma.property.findUnique({ where: { id: parsed.data.propertyId }, select: { id: true, isHidden: true } });
+  if (!exists || exists.isHidden) return fail("Property not found.", 404);
 
   const saved = await prisma.savedProperty.upsert({
     where: { userId_propertyId: { userId: g.session.sub, propertyId: parsed.data.propertyId } },

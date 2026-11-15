@@ -174,6 +174,7 @@ export default async function LandlordDashboard({ searchParams }: Props) {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <StatusBadge status={l.status} />
+                    {l.isHidden && <span className="badge bg-terracotta-50 text-terracotta-700 ring-1 ring-terracotta-200">Hidden by admin</span>}
                     <span className="text-xs text-stone-500">
                       {propertyTypeLabel(l.propertyType)} · {advanceLabel(l.advanceMonths)}
                     </span>

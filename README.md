@@ -152,6 +152,28 @@ All endpoints take and return JSON. Validation failures return `422` with `{ err
 | `DELETE /api/viewings/:id` | Tenant (own) | Pending requests only |
 | `GET/POST /api/favorites`, `DELETE /api/favorites/:propertyId` | Tenant | Wishlist |
 | `PATCH /api/profile` | Any | `{ name, phone?, avatarUrl?, currentPassword?, newPassword? }` |
+| `PATCH /api/admin/users/:id` | Admin | `{ isVerified }` (landlord/agent accounts only) |
+| `PATCH /api/admin/properties/:id` | Admin | `{ isHidden?, isFeatured? }` (hiding also unfeatures) |
+| `GET /api/admin/demo-data` | Admin | Counts of demo accounts, listings and viewings |
+| `DELETE /api/admin/demo-data` | Admin | Permanently deletes all `@efiehomes.test` accounts except your own, with their listings |
+
+---
+
+## Admin dashboard
+
+Admins land on `/dashboard/admin`, where they can:
+
+- **Verify landlords and agents:** verified landlords get a trust badge on every listing.
+- **Moderate listings:** feature on the home page, hide from the public (the landlord still sees it, marked "Hidden by admin"), or delete.
+- **Remove demo data:** a one-click cleanup appears while any `@efiehomes.test` accounts remain.
+
+**Becoming an admin.** Register a normal account on the site first, then promote it:
+
+- *On your PC (dev database):* `npm run make-admin -- you@example.com`
+- *On the live site:* in the Neon console for the live database, open **SQL Editor** and run
+  `UPDATE "User" SET role = 'ADMIN', "isVerified" = true WHERE email = 'you@example.com';`
+
+Then log out and back in: the role is stored in the session cookie.
 
 ---
 

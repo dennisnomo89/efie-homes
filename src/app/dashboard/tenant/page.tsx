@@ -36,7 +36,7 @@ export default async function TenantDashboard() {
       },
     }),
     prisma.savedProperty.findMany({
-      where: { userId: user.id },
+      where: { userId: user.id, property: { isHidden: false } },
       orderBy: { createdAt: "desc" },
       include: { property: { include: { landlord: { select: landlordSelect } } } },
     }),

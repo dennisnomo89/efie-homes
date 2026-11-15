@@ -13,7 +13,7 @@ function safeNext(next: string | undefined, fallback: string) {
 }
 
 function homeFor(role: string) {
-  return role === "LANDLORD" || role === "ADMIN" ? "/dashboard/landlord" : "/dashboard/tenant";
+  return role === "ADMIN" ? "/dashboard/admin" : role === "LANDLORD" ? "/dashboard/landlord" : "/dashboard/tenant";
 }
 
 export function LoginForm({ next }: { next?: string }) {

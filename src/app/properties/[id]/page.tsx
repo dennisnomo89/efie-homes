@@ -8,6 +8,7 @@ import {
   CalendarClock,
   CircleCheck,
   Eye,
+  EyeOff,
   MapPin,
   Pencil,
   Ruler,
@@ -30,8 +31,8 @@ type Props = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const p = await prisma.property.findUnique({ where: { id }, select: { title: true, neighborhood: true, monthlyRent: true } });
-  if (!p) return { title: "Property not found" };
+  const p = await prisma.property.findUnique({ where: { id }, select: { title: true, neighborhood: true, monthlyRent: true, isHidden: true } });
+  if (!p || p.isHidden) return { title: "Property not found" };
   return { title: p.title, description: `${formatCedis(p.monthlyRent)} / month in ${p.neighborhood}. Book a viewing on Efie Homes.` };
 }
 
@@ -43,15 +44,19 @@ export default async function PropertyDetailPage({ params }: Props) {
   });
   if (!raw) notFound();
 
-  // Count the view (fire-and-forget is fine for a metric).
-  await prisma.property.update({ where: { id }, data: { views: { increment: 1 } } });
+  const user = await getCurrentUser();
+  const canManage = Boolean(user && (user.id === raw.landlordId || user.role === "ADMIN"));
+  // Hidden listings exist only for their owner and admins.
+  if (raw.isHidden && !canManage) notFound();
+
+  // Count public views only.
+  if (!canManage) await prisma.property.update({ where: { id }, data: { views: { increment: 1 } } });
 
   const property = toView(raw);
-  const user = await getCurrentUser();
   const [savedIds, similarRaw, pendingRequest] = await Promise.all([
     getSavedIds(user?.id),
     prisma.property.findMany({
-      where: { id: { not: id }, status: "AVAILABLE", OR: [{ neighborhood: property.neighborhood }, { region: property.region }] },
+      where: { id: { not: id }, status: "AVAILABLE", isHidden: false, OR: [{ neighborhood: property.neighborhood }, { region: property.region }] },
       orderBy: [{ isFeatured: "desc" }, { views: "desc" }],
       take: 3,
       include: { landlord: { select: landlordSelect } },
@@ -62,7 +67,7 @@ export default async function PropertyDetailPage({ params }: Props) {
   ]);
   const similar = similarRaw.map(toView);
   const rented = property.status === "RENTED";
-  const isOwner = user && (user.id === property.landlordId || user.role === "ADMIN");
+  const isOwner = canManage;
   const favoriteMode = favoriteModeFor(user?.role);
 
   return (
@@ -72,6 +77,13 @@ export default async function PropertyDetailPage({ params }: Props) {
         <Link href={`/properties?region=${encodeURIComponent(property.region)}`} className="hover:text-forest-800">{property.region}</Link> /
         <Link href={`/properties?location=${encodeURIComponent(property.neighborhood)}`} className="hover:text-forest-800">{property.neighborhood}</Link>
       </nav>
+
+      {property.isHidden && (
+        <div className="mb-4 flex items-center gap-3 rounded-2xl border border-terracotta-200 bg-terracotta-50 p-4 text-sm text-terracotta-800">
+          <EyeOff className="h-5 w-5 shrink-0" />
+          This listing has been hidden by an Efie Homes admin. Only you and admins can see it; it doesn&rsquo;t appear in search.
+        </div>
+      )}
 
       {rented && (
         <div className="mb-4 flex items-center gap-3 rounded-2xl border border-stone-300 bg-stone-100 p-4 text-sm">

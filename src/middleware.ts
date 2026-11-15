@@ -4,7 +4,7 @@ import { AUTH_COOKIE, verifyToken } from "@/lib/jwt";
 const ROLE_HOME: Record<string, string> = {
   TENANT: "/dashboard/tenant",
   LANDLORD: "/dashboard/landlord",
-  ADMIN: "/dashboard/landlord",
+  ADMIN: "/dashboard/admin",
 };
 
 export async function middleware(req: NextRequest) {
@@ -27,6 +27,9 @@ export async function middleware(req: NextRequest) {
     return res;
   }
 
+  if (pathname.startsWith("/dashboard/admin") && session.role !== "ADMIN") {
+    return NextResponse.redirect(new URL(ROLE_HOME[session.role] ?? "/dashboard/tenant", req.url));
+  }
   if (pathname.startsWith("/dashboard/landlord") && session.role !== "LANDLORD" && session.role !== "ADMIN") {
     return NextResponse.redirect(new URL("/dashboard/tenant", req.url));
   }

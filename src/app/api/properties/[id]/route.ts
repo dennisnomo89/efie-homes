@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getSession } from "@/lib/auth";
 import { fail, guard, ok, readJson, validationFailed } from "@/lib/api";
 import { landlordSelect, toView } from "@/lib/properties";
 import { propertySchema, propertyStatusSchema } from "@/lib/validations";
@@ -12,6 +13,11 @@ export async function GET(_req: Request, { params }: Ctx) {
     include: { landlord: { select: landlordSelect } },
   });
   if (!property) return fail("Property not found.", 404);
+  if (property.isHidden) {
+    const session = await getSession();
+    const canManage = session && (session.sub === property.landlordId || session.role === "ADMIN");
+    if (!canManage) return fail("Property not found.", 404);
+  }
   return ok({ property: toView(property) });
 }
 

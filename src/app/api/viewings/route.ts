@@ -38,8 +38,8 @@ export async function POST(req: Request) {
   if (!parsed.success) return validationFailed(parsed.error);
   const { propertyId, preferredDate, preferredTime, phone, message } = parsed.data;
 
-  const property = await prisma.property.findUnique({ where: { id: propertyId }, select: { id: true, status: true } });
-  if (!property) return fail("Property not found.", 404);
+  const property = await prisma.property.findUnique({ where: { id: propertyId }, select: { id: true, status: true, isHidden: true } });
+  if (!property || property.isHidden) return fail("Property not found.", 404);
   if (property.status !== "AVAILABLE") return fail("This property has already been rented.", 409);
 
   const duplicate = await prisma.viewingRequest.findFirst({

@@ -60,6 +60,7 @@ export function parseFilters(params: RawParams): PropertyFilters {
 
 export function buildWhere(f: PropertyFilters): Prisma.PropertyWhereInput {
   const and: Prisma.PropertyWhereInput[] = [];
+  and.push({ isHidden: false });
   if (!f.includeRented) and.push({ status: "AVAILABLE" });
   if (f.location) {
     and.push({

@@ -28,15 +28,15 @@ export default async function HomePage() {
 
   const [featuredRaw, totalAvailable, landlordCount, hoodCounts, typeCounts, savedIds] = await Promise.all([
     prisma.property.findMany({
-      where: { status: "AVAILABLE" },
+      where: { status: "AVAILABLE", isHidden: false },
       orderBy: [{ isFeatured: "desc" }, { views: "desc" }],
       take: 6,
       include: { landlord: { select: landlordSelect } },
     }),
-    prisma.property.count({ where: { status: "AVAILABLE" } }),
+    prisma.property.count({ where: { status: "AVAILABLE", isHidden: false } }),
     prisma.user.count({ where: { role: "LANDLORD", isVerified: true } }),
-    prisma.property.groupBy({ by: ["neighborhood"], where: { status: "AVAILABLE" }, _count: { _all: true } }),
-    prisma.property.groupBy({ by: ["propertyType"], where: { status: "AVAILABLE" }, _count: { _all: true }, _min: { monthlyRent: true } }),
+    prisma.property.groupBy({ by: ["neighborhood"], where: { status: "AVAILABLE", isHidden: false }, _count: { _all: true } }),
+    prisma.property.groupBy({ by: ["propertyType"], where: { status: "AVAILABLE", isHidden: false }, _count: { _all: true }, _min: { monthlyRent: true } }),
     getSavedIds(session?.sub),
   ]);
 

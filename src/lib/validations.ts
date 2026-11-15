@@ -158,3 +158,14 @@ export function fieldErrors(error: z.ZodError): Record<string, string> {
   }
   return out;
 }
+
+export const adminUserSchema = z.object({
+  isVerified: z.boolean(),
+});
+
+export const adminPropertySchema = z
+  .object({
+    isHidden: z.boolean().optional(),
+    isFeatured: z.boolean().optional(),
+  })
+  .refine((v) => v.isHidden !== undefined || v.isFeatured !== undefined, { message: "Nothing to update" });

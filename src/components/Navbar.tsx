@@ -32,7 +32,13 @@ export function Navbar({ user }: { user: NavUser }) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   const isLandlord = user?.role === "LANDLORD" || user?.role === "ADMIN";
-  const dashboardHref = user ? (isLandlord ? "/dashboard/landlord" : "/dashboard/tenant") : "/login";
+  const dashboardHref = !user
+    ? "/login"
+    : user.role === "ADMIN"
+      ? "/dashboard/admin"
+      : isLandlord
+        ? "/dashboard/landlord"
+        : "/dashboard/tenant";
 
   useEffect(() => {
     setDrawerOpen(false);

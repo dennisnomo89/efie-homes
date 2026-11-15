@@ -67,6 +67,8 @@ model Property {
   /// AVAILABLE | RENTED
   status          String   @default("AVAILABLE")
   isFeatured      Boolean  @default(false)
+  /// Hidden by an admin: not shown publicly, still visible to the owner and admins
+  isHidden        Boolean  @default(false)
   views           Int      @default(0)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

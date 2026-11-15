@@ -132,3 +132,6 @@ export function amenityLabel(value: string): string {
 export function advanceLabel(months: number): string {
   return ADVANCE_OPTIONS.find((a) => a.months === months)?.label ?? `${months} Months Advance`;
 }
+
+/** Seeded demo accounts all use this email domain (see prisma/seed.ts). */
+export const DEMO_EMAIL_DOMAIN = "@efiehomes.test";

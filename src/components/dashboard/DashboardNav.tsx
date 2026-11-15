@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Heart, LayoutDashboard, Plus, UserRound } from "lucide-react";
+import { CalendarDays, Heart, LayoutDashboard, Plus, ShieldCheck, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function DashboardNav({ role }: { role: string }) {
@@ -11,7 +11,8 @@ export function DashboardNav({ role }: { role: string }) {
 
   const items = isLandlord
     ? [
-        { href: "/dashboard/landlord", label: "Overview", icon: LayoutDashboard },
+        ...(role === "ADMIN" ? [{ href: "/dashboard/admin", label: "Admin", icon: ShieldCheck }] : []),
+        { href: "/dashboard/landlord", label: role === "ADMIN" ? "All listings & requests" : "Overview", icon: LayoutDashboard },
         { href: "/dashboard/landlord/properties/new", label: "New listing", icon: Plus },
         { href: "/dashboard/profile", label: "Profile", icon: UserRound },
       ]
